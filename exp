@@ -1,0 +1,2631 @@
+================================================================================
+         AI LAB COMPLETE PYTHON CODE REFERENCE — SELF-EXPLANATORY GUIDE
+================================================================================
+  Topics Covered:
+    1.  All Required Libraries (Import Sheet)
+    2.  Minimax Search Algorithm
+    3.  Alpha-Beta Pruning
+    4.  Tic-Tac-Toe using Minimax
+    5.  Optimal Coin-Pick Strategy Game (Minimax)
+    6.  Word Scrabble Game (Minimax + Memoization)
+    7.  Chess AI (Minimax + Alpha-Beta)
+    8.  CSP — OR-Tools Basics (Variables, Constraints, Solver)
+    9.  CSP — All Solutions Finder
+   10.  CSP — Variable Types Reference
+   11.  CSP — Advanced Constraints Reference
+   12.  CSP — Generic Template
+   13.  CSP — Universal Template (Complex)
+   14.  CSP — N-Queens Problem
+   15.  CSP — Drone Path Planner (UCS)
+   16.  CSP — Hospital Doctor Assignment
+   17.  CSP — Logistics Vehicle Assignment
+   18.  CSP — Course Examination Scheduling
+   19.  CSP — University Exam Scheduling (with Rooms)
+   20.  CSP — University Course Timetabling
+   21.  CSP — NUCES Exam Schedule (Rooms + Times)
+   22.  Markov Chain Simulation (Basic)
+   23.  Weather Markov Model + Monte Carlo
+   24.  E-Commerce Order Lifecycle (Markov + Monte Carlo)
+   25.  Bayesian Network — Burglary/Alarm (Classic)
+   26.  Bayesian Network — Medical Diagnosis (Flu vs Cold)
+   27.  Bayesian Network — Student Performance
+   28.  Bayesian Network — Traffic Incident Detection
+   29.  Machine Learning — California Housing Regression
+   30.  Machine Learning — Titanic Classification
+   31.  Machine Learning — Iris K-Means Clustering
+   32.  Machine Learning — Mall Customers K-Means
+   33.  Machine Learning — K-Means All Features (Scaling Comparison)
+   34.  Machine Learning — Vehicle Clustering (Scaling Comparison)
+   35.  Machine Learning — Student Clustering (Elbow Method)
+   36.  Machine Learning — Full Regression Pipeline (CSV Input)
+   37.  Machine Learning — Attrition EDA Template
+   38.  Machine Learning — Attrition Preprocessing Pipeline
+   39.  Utility Snippets (Pandas, Encoding, Plotting, CV, ROC)
+================================================================================
+
+
+================================================================================
+  SECTION 1 — ALL REQUIRED LIBRARIES (IMPORT SHEET)
+================================================================================
+  Use this as a master import block at the top of any AI lab file.
+  Install missing libraries using the pip command at the bottom.
+--------------------------------------------------------------------------------
+
+# BASIC LIBRARIES
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# MACHINE LEARNING (SUPERVISED / UNSUPERVISED)
+from sklearn.model_selection import train_test_split, KFold, LeaveOneOut
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.cluster import KMeans
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_curve, roc_auc_score
+
+# DATA VISUALIZATION
+import seaborn as sns
+
+# BAYESIAN NETWORKS
+from pgmpy.models import BayesianNetwork, DiscreteBayesianNetwork
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+# CSP (Constraint Satisfaction Problems)
+from ortools.sat.python import cp_model
+import time
+
+# MINIMAX / ALPHA-BETA
+import math
+
+# INSTALL COMMAND (run in terminal if any library is missing):
+# pip install numpy pandas matplotlib seaborn scikit-learn pgmpy python-constraint ortools
+
+
+================================================================================
+  SECTION 2 — MINIMAX SEARCH ALGORITHM
+================================================================================
+  What it does:
+    Implements a game tree search where a MAX player tries to maximize the
+    score and a MIN player tries to minimize it. Used in two-player zero-sum
+    games (chess, tic-tac-toe, etc.).
+
+  Classes & Functions:
+    - Node: Stores the node's value, list of children, and the computed
+            minimax value after the algorithm runs.
+    - MinimaxAgent:
+        * formulate_goal(node): Returns "Goal reached" if minimax value is
+          already computed, otherwise "Searching".
+        * act(node, environment): Triggers the minimax computation.
+    - Environment:
+        * get_percept(node): Returns the node as-is (the agent's view).
+        * compute_minimax(node, depth, maximizing_player): Recursively
+          computes the best value. At MAX nodes it takes the maximum of
+          children; at MIN nodes it takes the minimum.
+    - run_agent(agent, environment, start_node): Connects the agent to the
+          environment and kicks off the search.
+--------------------------------------------------------------------------------
+
+import math
+
+class Node:
+    def __init__(self, value=None):
+        self.value = value
+        self.children = []
+        self.minmax_value = None
+
+class MinimaxAgent:
+    def __init__(self, depth):
+        self.depth = depth
+
+    def formulate_goal(self, node):
+        # Goal = minimax value has been computed for this node
+        return "Goal reached" if node.minmax_value is not None else "Searching"
+
+    def act(self, node, environment):
+        goal_status = self.formulate_goal(node)
+        if goal_status == "Goal reached":
+            return f"Minimax value for root node: {node.minmax_value}"
+        else:
+            return environment.compute_minimax(node, self.depth)
+
+class Environment:
+    def __init__(self, tree):
+        self.tree = tree
+        self.computed_nodes = []
+
+    def get_percept(self, node):
+        return node
+
+    def compute_minimax(self, node, depth, maximizing_player=True):
+        if depth == 0 or not node.children:
+            self.computed_nodes.append(node.value)
+            return node.value
+
+        if maximizing_player:
+            value = -math.inf
+            for child in node.children:
+                child_value = self.compute_minimax(child, depth - 1, False)
+                value = max(value, child_value)
+            node.minmax_value = value
+            self.computed_nodes.append(node.value)
+            return value
+        else:
+            value = math.inf
+            for child in node.children:
+                child_value = self.compute_minimax(child, depth - 1, True)
+                value = min(value, child_value)
+            node.minmax_value = value
+            self.computed_nodes.append(node.value)
+            return value
+
+def run_agent(agent, environment, start_node):
+    percept = environment.get_percept(start_node)
+    agent.act(percept, environment)
+
+# --- Build the game tree ---
+root = Node('A')
+n1 = Node('B'); n2 = Node('C')
+root.children = [n1, n2]
+n3 = Node('D'); n4 = Node('E'); n5 = Node('F'); n6 = Node('G')
+n1.children = [n3, n4]; n2.children = [n5, n6]
+n7 = Node(2); n8 = Node(3); n9 = Node(5); n10 = Node(9)
+n3.children = [n7, n8]; n4.children = [n9, n10]
+n11 = Node(0); n12 = Node(1); n13 = Node(7); n14 = Node(5)
+n5.children = [n11, n12]; n6.children = [n13, n14]
+
+depth = 3
+agent = MinimaxAgent(depth)
+environment = Environment(root)
+run_agent(agent, environment, root)
+
+print("Computed Nodes:", environment.computed_nodes)
+print("Minimax values:")
+print("A:", root.minmax_value)
+print("B:", n1.minmax_value)
+print("C:", n2.minmax_value)
+
+
+================================================================================
+  SECTION 3 — ALPHA-BETA PRUNING
+================================================================================
+  What it does:
+    An optimized version of Minimax. It skips ("prunes") branches that cannot
+    possibly affect the final result. Alpha = best MAX can guarantee so far;
+    Beta = best MIN can guarantee so far. If beta <= alpha, prune the branch.
+
+  Key difference from plain Minimax:
+    - alpha_beta_search() takes alpha and beta parameters.
+    - After updating alpha/beta, it checks if pruning is possible (beta <= alpha)
+      and breaks out of the loop early, printing the pruned node's value.
+--------------------------------------------------------------------------------
+
+import math
+
+class Node:
+    def __init__(self, value=None):
+        self.value = value
+        self.children = []
+        self.minmax_value = None
+
+class MinimaxAgent:
+    def __init__(self, depth):
+        self.depth = depth
+
+    def formulate_goal(self, node):
+        return "Goal reached" if node.minmax_value is not None else "Searching"
+
+    def act(self, node, environment):
+        goal_status = self.formulate_goal(node)
+        if goal_status == "Goal reached":
+            return f"Minimax value for root node: {node.minmax_value}"
+        else:
+            return environment.alpha_beta_search(node, self.depth, -math.inf, math.inf, True)
+
+class Environment:
+    def __init__(self, tree):
+        self.tree = tree
+        self.computed_nodes = []
+
+    def get_percept(self, node):
+        return node
+
+    def alpha_beta_search(self, node, depth, alpha, beta, maximizing_player=True):
+        self.computed_nodes.append(node.value)
+        if depth == 0 or not node.children:
+            return node.value
+
+        if maximizing_player:
+            value = -math.inf
+            for child in node.children:
+                value = max(value, self.alpha_beta_search(child, depth - 1, alpha, beta, False))
+                alpha = max(alpha, value)
+                if beta <= alpha:
+                    print("Pruned node:", child.value)
+                    break
+            node.minmax_value = value
+            return value
+        else:
+            value = math.inf
+            for child in node.children:
+                value = min(value, self.alpha_beta_search(child, depth - 1, alpha, beta, True))
+                beta = min(beta, value)
+                if beta <= alpha:
+                    print("Pruned node:", child.value)
+                    break
+            node.minmax_value = value
+            return value
+
+def run_agent(agent, environment, start_node):
+    percept = environment.get_percept(start_node)
+    agent.act(percept, environment)
+
+# --- Build the same tree as Minimax ---
+root = Node('A')
+n1 = Node('B'); n2 = Node('C')
+root.children = [n1, n2]
+n3 = Node('D'); n4 = Node('E'); n5 = Node('F'); n6 = Node('G')
+n1.children = [n3, n4]; n2.children = [n5, n6]
+n7 = Node(2); n8 = Node(3); n9 = Node(5); n10 = Node(9)
+n3.children = [n7, n8]; n4.children = [n9, n10]
+n11 = Node(0); n12 = Node(1); n13 = Node(7); n14 = Node(5)
+n5.children = [n11, n12]; n6.children = [n13, n14]
+
+depth = 3
+agent = MinimaxAgent(depth)
+environment = Environment(root)
+run_agent(agent, environment, root)
+
+print("Computed Nodes:", environment.computed_nodes)
+print("Minimax values:")
+print(f"A: {root.minmax_value}")
+print(f"B: {n1.minmax_value}")
+print(f"C: {n2.minmax_value}")
+
+
+================================================================================
+  SECTION 4 — TIC-TAC-TOE USING MINIMAX
+================================================================================
+  What it does:
+    A playable Tic-Tac-Toe game where the AI plays as X and the human plays
+    as O. The AI uses Minimax to always make the optimal move.
+
+  Functions:
+    - print_board(): Displays the 3x3 board in the console.
+    - check_winner(b): Checks all rows, columns, and diagonals for a winner.
+      Returns 'X', 'O', or None.
+    - is_full(b): Returns True if no empty cells remain (draw condition).
+    - minimax(b, is_max): Recursively evaluates all possible game states.
+      Returns +1 if X wins, -1 if O wins, 0 for draw.
+    - best_move(): Iterates all empty cells, simulates each move, picks the
+      cell with the highest minimax score.
+  
+  Game Loop:
+    - Human enters row and column (0-2).
+    - AI responds with its best calculated move.
+    - Game ends when there's a winner or the board is full.
+--------------------------------------------------------------------------------
+
+import math
+
+board = [[" " for _ in range(3)] for _ in range(3)]
+
+def print_board():
+    for row in board:
+        print("|".join(row))
+        print("-"*5)
+
+def check_winner(b):
+    for i in range(3):
+        if b[i][0] == b[i][1] == b[i][2] != " ":
+            return b[i][0]
+        if b[0][i] == b[1][i] == b[2][i] != " ":
+            return b[0][i]
+    if b[0][0] == b[1][1] == b[2][2] != " ":
+        return b[0][0]
+    if b[0][2] == b[1][1] == b[2][0] != " ":
+        return b[0][2]
+    return None
+
+def is_full(b):
+    return all(b[i][j] != " " for i in range(3) for j in range(3))
+
+def minimax(b, is_max):
+    winner = check_winner(b)
+    if winner == "X": return 1
+    if winner == "O": return -1
+    if is_full(b): return 0
+
+    if is_max:
+        best = -math.inf
+        for i in range(3):
+            for j in range(3):
+                if b[i][j] == " ":
+                    b[i][j] = "X"
+                    best = max(best, minimax(b, False))
+                    b[i][j] = " "
+        return best
+    else:
+        best = math.inf
+        for i in range(3):
+            for j in range(3):
+                if b[i][j] == " ":
+                    b[i][j] = "O"
+                    best = min(best, minimax(b, True))
+                    b[i][j] = " "
+        return best
+
+def best_move():
+    best_val = -math.inf
+    move = (-1, -1)
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == " ":
+                board[i][j] = "X"
+                val = minimax(board, False)
+                board[i][j] = " "
+                if val > best_val:
+                    best_val = val
+                    move = (i, j)
+    return move
+
+while True:
+    print_board()
+    try:
+        r, c = map(int, input("Enter row col (0-2): ").split())
+    except ValueError: continue
+    if board[r][c] != " ":
+        print("Invalid move!")
+        continue
+    board[r][c] = "O"
+    if check_winner(board) or is_full(board): break
+    ai_r, ai_c = best_move()
+    board[ai_r][ai_c] = "X"
+    if check_winner(board) or is_full(board): break
+
+print_board()
+winner = check_winner(board)
+print("Winner:", winner if winner else "Draw")
+
+
+================================================================================
+  SECTION 5 — OPTIMAL COIN-PICK STRATEGY GAME (MINIMAX)
+================================================================================
+  What it does:
+    Two players (Max and Min) take turns picking coins from either end of a
+    row. Max wants to maximize their total score; Min wants to minimize it.
+    Uses Minimax recursion to find the theoretically optimal play for both.
+
+  Functions:
+    - minimax(coins, i, j, is_max): Returns the best score achievable for the
+      current player from coins[i..j]. At MAX turn, picks the max of taking
+      left or right; at MIN turn, picks the minimum.
+    - play_game(coins): Simulates the game step-by-step, showing which coin
+      each player picks and the remaining coins after each turn.
+--------------------------------------------------------------------------------
+
+import math
+
+def minimax(coins, i, j, is_max):
+    if i > j:
+        return 0
+    if is_max:
+        return max(
+            coins[i] + minimax(coins, i+1, j, False),
+            coins[j] + minimax(coins, i, j-1, False)
+        )
+    else:
+        return min(
+            minimax(coins, i+1, j, True),
+            minimax(coins, i, j-1, True)
+        )
+
+def play_game(coins):
+    i, j = 0, len(coins) - 1
+    max_score = 0; min_score = 0
+    is_max = True
+    print("Initial Coins:", coins)
+
+    while i <= j:
+        if is_max:
+            left = coins[i] + minimax(coins, i+1, j, False)
+            right = coins[j] + minimax(coins, i, j-1, False)
+            if left >= right:
+                pick = coins[i]; i += 1
+            else:
+                pick = coins[j]; j -= 1
+            max_score += pick
+            print(f"Max picks {pick}, Remaining Coins: {coins[i:j+1]}")
+        else:
+            left = minimax(coins, i+1, j, True)
+            right = minimax(coins, i, j-1, True)
+            if left <= right:
+                pick = coins[i]; i += 1
+            else:
+                pick = coins[j]; j -= 1
+            min_score += pick
+            print(f"Min picks {pick}, Remaining Coins: {coins[i:j+1]}")
+        is_max = not is_max
+
+    print(f"\nFinal Scores - Max: {max_score}, Min: {min_score}")
+    if max_score > min_score: print("Winner: Max")
+    elif min_score > max_score: print("Winner: Min")
+    else: print("Draw")
+
+coins = [3, 9, 1, 2, 7, 5]
+play_game(coins)
+
+
+================================================================================
+  SECTION 6 — WORD SCRABBLE GAME (MINIMAX + MEMOIZATION)
+================================================================================
+  What it does:
+    Two players take turns picking letters from a pool to form a word.
+    Max wants to form a dictionary word (positive score = word length),
+    Min wants to avoid it (penalty = -2 for invalid words). Memoization
+    prevents recomputing the same state twice.
+
+  Functions:
+    - score_word(word): Returns len(word) if valid, -2 otherwise.
+    - minimax(pool, current_word, is_max): Recursively tries all letter picks.
+      Uses a memo dictionary keyed by (remaining pool, current word, whose turn).
+    - play_game(letters): Simulates the game, printing each player's pick.
+--------------------------------------------------------------------------------
+
+import math
+
+DICTIONARY = {"cat", "bat", "tab", "at", "cab", "bad", "had"}
+
+def score_word(word):
+    if word in DICTIONARY:
+        return len(word)
+    return -2
+
+memo = {}
+
+def minimax(pool, current_word, is_max):
+    key = (tuple(pool), current_word, is_max)
+    if key in memo:
+        return memo[key]
+    if not pool:
+        result = score_word(current_word)
+        memo[key] = result
+        return result
+    if is_max:
+        best = -math.inf
+        for i in range(len(pool)):
+            new_pool = pool[:i] + pool[i+1:]
+            val = minimax(new_pool, current_word + pool[i], False)
+            best = max(best, val)
+    else:
+        best = math.inf
+        for i in range(len(pool)):
+            new_pool = pool[:i] + pool[i+1:]
+            val = minimax(new_pool, current_word + pool[i], True)
+            best = min(best, val)
+    memo[key] = best
+    return best
+
+def play_game(letters):
+    pool = letters[:]
+    current_word = ""
+    is_max = True
+    print("Initial Letters:", pool)
+
+    while pool:
+        best_index = 0
+        best_value = -math.inf if is_max else math.inf
+        for i in range(len(pool)):
+            letter = pool[i]
+            new_pool = pool[:i] + pool[i+1:]
+            value = minimax(new_pool, current_word + letter, not is_max)
+            if is_max:
+                if value > best_value:
+                    best_value = value; best_index = i
+            else:
+                if value < best_value:
+                    best_value = value; best_index = i
+        chosen_letter = pool.pop(best_index)
+        current_word += chosen_letter
+        player = "Max" if is_max else "Min"
+        print(f"{player} picks '{chosen_letter}', Current Word: {current_word}")
+        is_max = not is_max
+
+    final_score = score_word(current_word)
+    print(f"\nFinal Word: {current_word}")
+    print(f"Score: {final_score}")
+    if final_score > 0: print("Winner: Max")
+    elif final_score < 0: print("Winner: Min")
+    else: print("Draw")
+
+if __name__ == "__main__":
+    letters = ['c', 'a', 't']
+    play_game(letters)
+
+
+================================================================================
+  SECTION 7 — CHESS AI (MINIMAX + ALPHA-BETA)
+================================================================================
+  What it does:
+    A playable chess game where the human plays White and the AI plays Black.
+    The AI uses Minimax with Alpha-Beta pruning to decide its best move.
+
+  Functions:
+    - evaluate(board): Calculates a material score (positive = White ahead).
+      Piece values: Pawn=100, Knight=320, Bishop=330, Rook=500, Queen=900.
+      Also adds +10 bonus for controlling center squares (d4, d5, e4, e5).
+    - minimax(board, depth, alpha, beta, maximizing): Standard Alpha-Beta
+      Minimax. Calls evaluate() at depth=0 or game over.
+    - get_best_move(board, depth): Iterates all legal moves for White, runs
+      minimax for each, returns the move with the highest value.
+    - play_game(): Main game loop. Human enters moves in UCI format (e.g., e2e4).
+  
+  Requires: pip install chess
+--------------------------------------------------------------------------------
+
+import chess
+import math
+
+def evaluate(board):
+    piece_values = {
+        chess.PAWN: 100, chess.KNIGHT: 320, chess.BISHOP: 330,
+        chess.ROOK: 500, chess.QUEEN: 900, chess.KING: 0
+    }
+    score = 0
+    for piece in piece_values:
+        score += len(board.pieces(piece, chess.WHITE)) * piece_values[piece]
+        score -= len(board.pieces(piece, chess.BLACK)) * piece_values[piece]
+    center_squares = [chess.D4, chess.D5, chess.E4, chess.E5]
+    for square in center_squares:
+        piece = board.piece_at(square)
+        if piece:
+            if piece.color == chess.WHITE: score += 10
+            else: score -= 10
+    return score
+
+def minimax(board, depth, alpha, beta, maximizing):
+    if depth == 0 or board.is_game_over():
+        return evaluate(board)
+    if maximizing:
+        max_eval = -math.inf
+        for move in board.legal_moves:
+            board.push(move)
+            eval = minimax(board, depth - 1, alpha, beta, False)
+            board.pop()
+            max_eval = max(max_eval, eval)
+            alpha = max(alpha, eval)
+            if beta <= alpha: break
+        return max_eval
+    else:
+        min_eval = math.inf
+        for move in board.legal_moves:
+            board.push(move)
+            eval = minimax(board, depth - 1, alpha, beta, True)
+            board.pop()
+            min_eval = min(min_eval, eval)
+            beta = min(beta, eval)
+            if beta <= alpha: break
+        return min_eval
+
+def get_best_move(board, depth):
+    best_move = None
+    best_value = -math.inf
+    for move in board.legal_moves:
+        board.push(move)
+        move_value = minimax(board, depth - 1, -math.inf, math.inf, False)
+        board.pop()
+        if move_value > best_value:
+            best_value = move_value
+            best_move = move
+    return best_move
+
+def play_game():
+    board = chess.Board()
+    print("=== Chess AI (Minimax + Alpha-Beta) ===")
+    print("You are WHITE. Enter moves like: e2e4")
+    while not board.is_game_over():
+        print(f"\nCurrent Board:\n\n{board}")
+        move = input("\nYour move: ")
+        try:
+            board.push(chess.Move.from_uci(move))
+        except:
+            print("Invalid move! Try again.")
+            continue
+        if board.is_game_over(): break
+        print("\nAI is thinking...")
+        ai_move = get_best_move(board, depth=3)
+        print("AI move:", ai_move)
+        board.push(ai_move)
+    print(f"\nFinal Board:\n\n{board}")
+    print(f"\nGame Over! Result: {board.result()}")
+
+if __name__ == "__main__":
+    play_game()
+
+
+================================================================================
+  SECTION 8 — CSP: OR-TOOLS BASICS (Variables, Constraints, Solver)
+================================================================================
+  What it does:
+    The simplest OR-Tools CP-SAT example. Defines three integer variables
+    (x, y, z) in domain [0, 2] and enforces x != y. Then solves and prints
+    all solutions.
+
+  Key OR-Tools concepts:
+    - cp_model.CpModel(): Creates the constraint model.
+    - model.NewIntVar(lb, ub, name): Creates an integer variable in [lb, ub].
+    - model.Add(constraint): Adds a constraint to the model.
+    - cp_model.CpSolver(): The solver that processes the model.
+    - cp_model.VarArraySolutionPrinter([vars]): Callback that prints each
+      solution found. Pass to solver.Solve() to enumerate all solutions.
+    - solver.parameters.enumerate_all_solutions = True: Find every solution.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+
+# Variables: x, y, z each in domain {0, 1, 2}
+num_vals = 3
+x = model.NewIntVar(0, num_vals - 1, "x")
+y = model.NewIntVar(0, num_vals - 1, "y")
+z = model.NewIntVar(0, num_vals - 1, "z")
+
+# Constraint: x and y must be different
+model.Add(x != y)
+
+# Solve and print all solutions
+solver = cp_model.CpSolver()
+solution_printer = cp_model.VarArraySolutionPrinter([x, y, z])
+solver.parameters.enumerate_all_solutions = True
+solver.Solve(model, solution_printer)
+
+
+================================================================================
+  SECTION 9 — CSP: ALL SOLUTIONS FINDER
+================================================================================
+  What it does:
+    Finds ALL valid assignments for three variables a, b, c in {1, 2, 3}
+    such that all three have different values. Also shows the status codes.
+
+  Key addition over Section 8:
+    - model.AddAllDifferent([a, b, c]): Shorthand for a!=b, b!=c, a!=c.
+    - Status codes: OPTIMAL, FEASIBLE, INFEASIBLE, UNKNOWN are printed to
+      understand what the solver result means.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+
+# Variables in domain {1, 2, 3}
+a = model.NewIntVar(1, 3, 'a')
+b = model.NewIntVar(1, 3, 'b')
+c = model.NewIntVar(1, 3, 'c')
+
+# All three must have different values
+model.Add(a != b)
+model.Add(b != c)
+model.Add(a != c)
+
+solver = cp_model.CpSolver()
+solution_printer = cp_model.VarArraySolutionPrinter([a, b, c])
+solver.parameters.enumerate_all_solutions = True
+solver.Solve(model, solution_printer)
+
+print("optimal",     cp_model.OPTIMAL)
+print("Feasible",    cp_model.FEASIBLE)
+print("InFeasible",  cp_model.INFEASIBLE)
+print("UNKNOWN",     cp_model.UNKNOWN)
+
+
+================================================================================
+  SECTION 10 — CSP: VARIABLE TYPES REFERENCE
+================================================================================
+  What it does:
+    Demonstrates the different kinds of variables available in OR-Tools:
+    Integer, Boolean, Interval, and Optional Interval variables.
+
+  Variable types explained:
+    - NewIntVar(lb, ub, name): Integer variable in [lb, ub].
+    - NewBoolVar(name): Binary variable, value is 0 or 1.
+    - NewFixedSizeIntervalVar(start, size, name): Interval of fixed duration.
+      Used in scheduling — represents a task that takes 'size' time units.
+    - NewOptionalFixedSizeIntervalVar(start, size, bool_var, name): Same as
+      above but only active/valid when bool_var == 1. Used when a task is
+      optional (may or may not be scheduled).
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+
+# Integer variables
+x = model.NewIntVar(0, 10, 'x')   # x in [0, 10]
+y = model.NewIntVar(-5, 5, 'y')   # y in [-5, 5]
+
+# Boolean variables (binary 0/1)
+b1 = model.NewBoolVar('b1')
+b2 = model.NewBoolVar('b2')
+
+# Interval variable (scheduling): task of fixed duration 5
+start = model.NewIntVar(0, 10, 'start')
+size = 5
+interval = model.NewFixedSizeIntervalVar(start, size, 'interval_task')
+
+# Optional interval: only active if b1 == 1
+optional_interval = model.NewOptionalFixedSizeIntervalVar(start, size, b1, 'optional_task')
+
+print(f"Integer Variables: {x}, {y}")
+print(f"Boolean Variables: {b1}, {b2}")
+print(f"Interval Variable: {interval}")
+print(f"Optional Interval Variable: {optional_interval}")
+
+
+================================================================================
+  SECTION 11 — CSP: ADVANCED CONSTRAINTS REFERENCE
+================================================================================
+  What it does:
+    Demonstrates the full range of constraint types in OR-Tools CP-SAT.
+
+  Constraints explained:
+    - model.Add(x + y <= 10): Linear constraint.
+    - model.AddAllDifferent([x,y,z]): All variables must take distinct values.
+    - model.AddAllowedAssignments([x,y], [(1,2),(3,4)]): Only these (x,y)
+      pairs are permitted.
+    - model.AddForbiddenAssignments([x,y], [(1,1),(2,2)]): These pairs are
+      NOT allowed.
+    - model.AddMinEquality(target, [x,y,z]): target = min(x, y, z).
+    - model.AddMaxEquality(target, [x,y,z]): target = max(x, y, z).
+    - model.AddDivisionEquality(q, num, denom): q = num / denom (integer).
+    - model.AddMultiplicationEquality(prod, [f0, f1]): prod = f0 * f1.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+
+x = model.NewIntVar(0, 10, "x")
+y = model.NewIntVar(0, 10, "y")
+z = model.NewIntVar(0, 10, "z")
+
+model.Add(x + y <= 10)
+model.AddAllDifferent([x, y, z])
+
+model.AddAllowedAssignments([x, y], [(1, 2), (3, 4)])
+model.AddForbiddenAssignments([x, y], [(1, 1), (2, 2)])
+
+min_target = model.NewIntVar(0, 10, "min_target")
+max_target = model.NewIntVar(0, 10, "max_target")
+model.AddMinEquality(min_target, [x, y, z])
+model.AddMaxEquality(max_target, [x, y, z])
+
+num   = model.NewIntVar(1, 10, "num")
+denom = model.NewIntVar(1, 5,  "denom")
+div_target = model.NewIntVar(0, 10, "div_target")
+model.AddDivisionEquality(div_target, num, denom)
+
+factors    = [model.NewIntVar(1, 5, f"f{i}") for i in range(2)]
+prod_target = model.NewIntVar(1, 25, "prod_target")
+model.AddMultiplicationEquality(prod_target, factors)
+
+solver = cp_model.CpSolver()
+status = solver.Solve(model)
+
+if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    print("Solution Found\n")
+    print(f"x = {solver.Value(x)}, y = {solver.Value(y)}, z = {solver.Value(z)}")
+    print(f"Min = {solver.Value(min_target)}, Max = {solver.Value(max_target)}")
+    print(f"Division: {solver.Value(num)} / {solver.Value(denom)} = {solver.Value(div_target)}")
+    print(f"Product = {solver.Value(prod_target)}")
+else:
+    print("No feasible solution found.")
+
+
+================================================================================
+  SECTION 12 — CSP: GENERIC TEMPLATE (Copy & Adapt)
+================================================================================
+  What it does:
+    A reusable OR-Tools template covering all common constraint patterns.
+    Replace the entity names and constraint logic to fit any new problem.
+
+  Constraint patterns included (pick what you need):
+    - AddAllDifferent: All entities get different values.
+    - model.Add(s['A'] != s['B']): Two entities differ.
+    - model.Add(s['A'] < s['B']): Ordering constraint.
+    - model.Add(s['A'] == 2): Fix an entity to a specific value.
+    - model.Add(s['A'] != 1): Exclude a specific value.
+    - model.AddLinearConstraint(s['A'], 3, 4): Value must be in [3, 4].
+    - model.AddModuloEquality(0, s['A'], 2): s['A'] must be even.
+    - AddAbsEquality: Absolute difference between two variables.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+
+entities   = ['A', 'B', 'C', 'D']  # Replace with your variable names
+domain_min = 1
+domain_max = 4
+
+s = {e: model.NewIntVar(domain_min, domain_max, e) for e in entities}
+
+# --- ADD THE CONSTRAINTS YOU NEED ---
+
+model.AddAllDifferent(s.values())          # All different
+model.Add(s['A'] != s['B'])                # A and B must differ
+model.Add(s['A'] < s['B'])                 # A must come before B
+model.Add(s['A'] == 2)                     # Fix A to value 2
+model.Add(s['A'] != 1)                     # A cannot be 1
+model.AddLinearConstraint(s['A'], 3, 4)    # A must be in [3, 4]
+model.AddModuloEquality(0, s['A'], 2)      # A must be even
+
+# Absolute difference: |A - B| == 1
+diff_ab = model.NewIntVar(-domain_max, domain_max, 'diff_ab')
+model.Add(diff_ab == s['A'] - s['B'])
+model.AddAbsEquality(1, diff_ab)
+
+# --- SOLVE ---
+solver = cp_model.CpSolver()
+status = solver.Solve(model)
+
+if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    print('Solution:')
+    for e, var in s.items():
+        print(f'  {e}: {solver.Value(var)}')
+else:
+    print('No solution found.')
+
+
+================================================================================
+  SECTION 13 — CSP: UNIVERSAL TEMPLATE (Complex Patterns)
+================================================================================
+  What it does:
+    An advanced template covering boolean implications, domain restrictions
+    with AddOneOf, and absolute distance. Use as a cheat-sheet for complex
+    assignment problems where you need conditional logic.
+
+  Patterns covered:
+    - model.AddAllDifferent([x, y, z]): Uniqueness.
+    - model.Add(x < y): Ordering / precedence.
+    - model.Add(y == z + 2): Fixed gap between two variables.
+    - model.AddOneOf(x, [1, 3, 5]): x must be one of these values.
+    - model.Add(y != 2): Exclude a specific value from y's domain.
+    - Boolean implications: Create a BoolVar, enforce a constraint only if
+      that BoolVar is True using .OnlyEnforceIf(b1). Then add OR logic with
+      model.AddBoolOr([b1]).
+    - Absolute distance: Create a variable for the difference, use
+      AddAbsEquality to constrain |x - y|.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+def solve_universal_csp():
+    model = cp_model.CpModel()
+
+    # 1. VARIABLE DEFINITION (Lower Bound, Upper Bound, Name)
+    x = model.NewIntVar(0, 10, 'x')
+    y = model.NewIntVar(0, 10, 'y')
+    z = model.NewIntVar(0, 10, 'z')
+
+    # 2. CONSTRAINTS
+
+    # A. Uniqueness
+    model.AddAllDifferent([x, y, z])
+
+    # B. Arithmetic (ordering, fixed gaps)
+    model.Add(x < y)
+    model.Add(y == z + 2)
+
+    # C. Domain Restriction
+    model.AddOneOf(x, [1, 3, 5])   # x must be 1, 3, or 5
+    model.Add(y != 2)
+
+    # D. Boolean Implication: if b1 is True, then x == 3
+    b1 = model.NewBoolVar('b1')
+    model.Add(x == 3).OnlyEnforceIf(b1)
+    model.AddBoolOr([b1])           # at least one condition must hold
+
+    # E. Absolute Distance: |x - y| == 1
+    diff = model.NewIntVar(0, 10, 'diff')
+    model.AddAbsEquality(diff, x - y)
+    model.Add(diff == 1)
+
+    # 3. SOLVER
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print(f"x: {solver.Value(x)}, y: {solver.Value(y)}, z: {solver.Value(z)}")
+    else:
+        print("No solution found.")
+
+if __name__ == "__main__":
+    solve_universal_csp()
+
+
+================================================================================
+  SECTION 14 — CSP: N-QUEENS PROBLEM
+================================================================================
+  What it does:
+    Places N queens on an NxN chessboard so that no two queens attack each
+    other (no two in the same row, column, or diagonal).
+
+  How it works:
+    - queens[i] = row of the queen in column i.
+    - model.AddAllDifferent(queens): No two queens in the same row.
+    - model.AddAllDifferent(queens[i] + i ...): No two on the same "/" diagonal.
+    - model.AddAllDifferent(queens[i] - i ...): No two on the same "\" diagonal.
+
+  Custom Callback (NQueenSolutionPrinter):
+    - Inherits from cp_model.CpSolverSolutionCallback.
+    - on_solution_callback(): Called every time a solution is found.
+      Prints the board with Q for queen and _ for empty.
+    - solution_count property: Tracks total solutions found.
+--------------------------------------------------------------------------------
+
+import time
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+board_size = 8
+
+queens = [model.NewIntVar(0, board_size - 1, f"x_{i}") for i in range(board_size)]
+
+model.AddAllDifferent(queens)
+model.AddAllDifferent(queens[i] + i for i in range(board_size))   # diagonal /
+model.AddAllDifferent(queens[i] - i for i in range(board_size))   # diagonal \
+
+class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
+    def __init__(self, queens):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__queens = queens
+        self.__solution_count = 0
+        self.__start_time = time.time()
+
+    @property
+    def solution_count(self):
+        return self.__solution_count
+
+    def on_solution_callback(self):
+        current_time = time.time()
+        print(f"Solution {self.__solution_count}, time = {current_time - self.__start_time:.4f} s")
+        self.__solution_count += 1
+        size = len(self.__queens)
+        for i in range(size):
+            for j in range(size):
+                if self.Value(self.__queens[j]) == i:
+                    print("Q", end=" ")
+                else:
+                    print("_", end=" ")
+            print()
+        print()
+
+solver = cp_model.CpSolver()
+solution_printer = NQueenSolutionPrinter(queens)
+solver.parameters.enumerate_all_solutions = True
+solver.Solve(model, solution_printer)
+print(f"Total solutions found: {solution_printer.solution_count}")
+
+
+================================================================================
+  SECTION 15 — CSP: DRONE PATH PLANNER (Uniform Cost Search)
+================================================================================
+  What it does:
+    Finds the shortest-cost path for a drone on a 2D grid from a start cell
+    to a goal cell. Straight moves cost 1; diagonal moves cost sqrt(2).
+    Uses UCS (Dijkstra-style priority queue).
+
+  Class DronePathPlanner:
+    - __init__: Accepts the grid (1=open, 0=obstacle), start (x,y), goal (x,y).
+      Defines 8 directions (4 straight + 4 diagonal).
+    - is_valid(x, y): Returns True if (x,y) is inside the grid and not an obstacle.
+    - ucs(): Runs Uniform Cost Search. Uses a min-heap priority queue of
+      (cost, position). Tracks parent nodes to reconstruct the path.
+    - reconstruct_path(parent): Walks back from goal to start using the
+      parent dictionary, then reverses the list.
+--------------------------------------------------------------------------------
+
+import heapq, math
+
+class DronePathPlanner:
+    def __init__(self, grid, start, goal):
+        self.grid = grid
+        self.start = start
+        self.goal = goal
+        self.rows = len(grid)
+        self.cols = len(grid[0])
+        self.directions = [
+            (-1,0),(1,0),(0,-1),(0,1),       # straight
+            (-1,-1),(-1,1),(1,-1),(1,1)       # diagonal
+        ]
+        self.diag_cost = math.sqrt(2)
+
+    def is_valid(self, x, y):
+        return 0 <= x < self.rows and 0 <= y < self.cols and self.grid[x][y] == 1
+
+    def ucs(self):
+        pq = [(0, self.start)]
+        visited = set()
+        parent = {self.start: None}
+        while pq:
+            cost, (x, y) = heapq.heappop(pq)
+            if (x,y) in visited: continue
+            visited.add((x,y))
+            if (x,y) == self.goal:
+                return self.reconstruct_path(parent)
+            for dx, dy in self.directions:
+                nx, ny = x+dx, y+dy
+                if self.is_valid(nx, ny) and (nx, ny) not in visited:
+                    move_cost = self.diag_cost if dx != 0 and dy != 0 else 1
+                    heapq.heappush(pq, (cost + move_cost, (nx, ny)))
+                    parent[(nx, ny)] = (x, y)
+        return None
+
+    def reconstruct_path(self, parent):
+        path, node = [], self.goal
+        while node:
+            path.append(node)
+            node = parent[node]
+        return path[::-1]
+
+if __name__ == "__main__":
+    grid = [
+        [1,1,1,1,1],
+        [1,0,1,0,1],
+        [1,1,1,1,1],
+        [1,0,1,0,1],
+        [1,1,1,1,1]
+    ]
+    start, goal = (0,0), (4,4)
+    drone = DronePathPlanner(grid, start, goal)
+    path = drone.ucs()
+    print("Shortest Path:", path if path else "No path found!")
+
+
+================================================================================
+  SECTION 16 — CSP: HOSPITAL DOCTOR ASSIGNMENT
+================================================================================
+  What it does:
+    Assigns 4 doctors to 4 departments (ICU, OPD, Surgery, Pediatrics) with
+    specific assignment constraints using OR-Tools.
+
+  How it works:
+    - Each doctor is a variable with domain [0..3] (department index).
+    - model.AddAllDifferent: Each doctor gets a unique department.
+    - Fixed assignments: Aamir->ICU, Farhan->Surgery, Nadia->Pediatrics
+      (Sana gets whichever remains).
+    - Solver finds the valid assignment and prints it.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+def solve_hospital_csp():
+    model = cp_model.CpModel()
+    doctors = ['Aamir', 'Sana', 'Farhan', 'Nadia']
+    departments = ['A', 'B', 'C', 'D']  # A=ICU, B=OPD, C=Surgery, D=Pediatrics
+
+    depa = {d: model.NewIntVar(0, 3, f'depa_{d}') for d in doctors}
+
+    model.AddAllDifferent(depa.values())   # one doctor per department
+    model.Add(depa['Aamir']  == 0)         # Aamir -> ICU
+    model.Add(depa['Farhan'] == 2)         # Farhan -> Surgery
+    model.Add(depa['Nadia']  == 3)         # Nadia -> Pediatrics
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print("\nHospital Staff Assignment")
+        print("-" * 30)
+        for d in doctors:
+            print(f"{d:<10} -> Department {departments[solver.Value(depa[d])]}")
+    else:
+        print("No solution found.")
+
+if __name__ == "__main__":
+    solve_hospital_csp()
+
+
+================================================================================
+  SECTION 17 — CSP: LOGISTICS VEHICLE ASSIGNMENT
+================================================================================
+  What it does:
+    Assigns 5 delivery locations (L1-L5) to 3 vehicles (V1, V2, V3) with
+    capacity limits, conflict constraints, workload fairness, and implications.
+
+  Constraints explained:
+    - Capacity: V1 and V2 can serve at most 2 locations; V3 at most 3.
+    - Specific: L1 and L2 cannot be in the same vehicle.
+    - Fixed: L3 must go to V3.
+    - Fairness: |count(V1) - count(V2)| <= 1 (balanced load).
+    - Implication: If L4 is assigned to V1, then L5 must also go to V1.
+      (model.AddImplication(l4_is_v1, l5_is_v1))
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+def solve_vehicle_assignment():
+    model = cp_model.CpModel()
+    locations = ['L1', 'L2', 'L3', 'L4', 'L5']
+    vehicles  = ['V1', 'V2', 'V3']
+
+    assignment = {loc: model.NewIntVar(0, 2, f'assign_{loc}') for loc in locations}
+
+    # Capacity constraints
+    for v_idx, capacity in [(0, 2), (1, 2), (2, 3)]:
+        count_vars = []
+        for loc in locations:
+            is_assigned = model.NewBoolVar(f'{loc}_to_V{v_idx+1}')
+            model.Add(assignment[loc] == v_idx).OnlyEnforceIf(is_assigned)
+            model.Add(assignment[loc] != v_idx).OnlyEnforceIf(is_assigned.Not())
+            count_vars.append(is_assigned)
+        model.Add(sum(count_vars) <= capacity)
+
+    model.Add(assignment['L1'] != assignment['L2'])  # L1 and L2 conflict
+    model.Add(assignment['L3'] == 2)                  # L3 must be V3
+
+    # Workload fairness for V1 vs V2
+    v1_count = model.NewIntVar(0, 5, 'v1_count')
+    v2_count = model.NewIntVar(0, 5, 'v2_count')
+    v1_indicators = [model.NewBoolVar(f'L{i}_is_V1') for i in range(1,6)]
+    v2_indicators = [model.NewBoolVar(f'L{i}_is_V2') for i in range(1,6)]
+    for i, loc in enumerate(locations):
+        model.Add(assignment[loc] == 0).OnlyEnforceIf(v1_indicators[i])
+        model.Add(assignment[loc] != 0).OnlyEnforceIf(v1_indicators[i].Not())
+        model.Add(assignment[loc] == 1).OnlyEnforceIf(v2_indicators[i])
+        model.Add(assignment[loc] != 1).OnlyEnforceIf(v2_indicators[i].Not())
+    model.Add(v1_count == sum(v1_indicators))
+    model.Add(v2_count == sum(v2_indicators))
+    model.Add(v1_count - v2_count <= 1)
+    model.Add(v1_count - v2_count >= -1)
+
+    # Implication: if L4 -> V1, then L5 -> V1
+    l4_is_v1 = model.NewBoolVar('l4_is_v1')
+    l5_is_v1 = model.NewBoolVar('l5_is_v1')
+    model.Add(assignment['L4'] == 0).OnlyEnforceIf(l4_is_v1)
+    model.Add(assignment['L4'] != 0).OnlyEnforceIf(l4_is_v1.Not())
+    model.Add(assignment['L5'] == 0).OnlyEnforceIf(l5_is_v1)
+    model.Add(assignment['L5'] != 0).OnlyEnforceIf(l5_is_v1.Not())
+    model.AddImplication(l4_is_v1, l5_is_v1)
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print("Vehicle Assignment Plan:")
+        for loc in locations:
+            v_idx = solver.Value(assignment[loc])
+            print(f"{loc} -> {vehicles[v_idx]}")
+        print(f"V1 Total: {solver.Value(v1_count)}")
+        print(f"V2 Total: {solver.Value(v2_count)}")
+    else:
+        print("No feasible assignment found.")
+
+if __name__ == "__main__":
+    solve_vehicle_assignment()
+
+
+================================================================================
+  SECTION 18 — CSP: COURSE EXAMINATION SCHEDULING
+================================================================================
+  What it does:
+    Assigns 8 courses (C0-C7) to 3 time slots with a max of 4 courses per
+    slot and specific pairing/conflict constraints.
+
+  Constraints:
+    - Slot capacity: At most 4 courses per slot (uses BoolVar per course per slot).
+    - C0 != C1: Cannot share the same slot.
+    - C2 == C3: Must be in the same slot.
+    - C4 != C5: Must be in different slots.
+    - C6 == C7: Must be in the same slot.
+    - C1 != C6: Cannot share a slot.
+    - C5 != 0: C5 is not allowed in Slot 0.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+def solve_exam_assignment():
+    model = cp_model.CpModel()
+    num_courses = 8; num_slots = 3
+    courses = [model.NewIntVar(0, num_slots - 1, f'C{i}') for i in range(num_courses)]
+
+    # Max 4 courses per slot
+    for slot in range(num_slots):
+        count_in_slot = []
+        for c in range(num_courses):
+            is_in_slot = model.NewBoolVar(f'C{c}_in_slot_{slot}')
+            model.Add(courses[c] == slot).OnlyEnforceIf(is_in_slot)
+            model.Add(courses[c] != slot).OnlyEnforceIf(is_in_slot.Not())
+            count_in_slot.append(is_in_slot)
+        model.Add(sum(count_in_slot) <= 4)
+
+    model.Add(courses[0] != courses[1])   # C0 != C1
+    model.Add(courses[2] == courses[3])   # C2 == C3
+    model.Add(courses[4] != courses[5])   # C4 != C5
+    model.Add(courses[6] == courses[7])   # C6 == C7
+    model.Add(courses[1] != courses[6])   # C1 != C6
+    model.Add(courses[5] != 0)            # C5 not in slot 0
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print("Final Examination Schedule:")
+        for i in range(num_courses):
+            print(f"Course C{i} is assigned to Slot {solver.Value(courses[i])}")
+        print("\nSlot Summary:")
+        for s in range(num_slots):
+            assigned = [f'C{i}' for i in range(num_courses) if solver.Value(courses[i]) == s]
+            print(f"Slot {s}: {len(assigned)} courses ({', '.join(assigned)})")
+    else:
+        print("No feasible solution found.")
+
+if __name__ == '__main__':
+    solve_exam_assignment()
+
+
+================================================================================
+  SECTION 19 — CSP: UNIVERSITY EXAM SCHEDULING (Gap + Ordering)
+================================================================================
+  What it does:
+    Assigns 5 subjects to 6 slots grouped into 3 days (2 slots per day) with
+    conflict, daily capacity, gap, ordering, and slot-capacity constraints.
+
+  Constraints:
+    - Conflict: Math!=Physics, AI!=OS, OS!=DB (cannot be in the same slot).
+    - Daily Capacity: At most 2 exams per day.
+    - Minimum Gap: |AI_slot - OS_slot| >= 2 (uses AddAbsEquality).
+    - Ordering: Math slot < DB slot.
+    - Slot Capacity: At most 2 exams per slot.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+def solve_exam_schedule():
+    model = cp_model.CpModel()
+    subjects = ['Math', 'Physics', 'AI', 'OS', 'DB']
+    slots = [1, 2, 3, 4, 5, 6]
+
+    exam = {s: model.NewIntVar(1, 6, f'exam_{s}') for s in subjects}
+
+    model.Add(exam['Math'] != exam['Physics'])
+    model.Add(exam['AI']   != exam['OS'])
+    model.Add(exam['OS']   != exam['DB'])
+
+    # Daily capacity (max 2 per day)
+    for day_slots in [[1,2],[3,4],[5,6]]:
+        exams_on_day = []
+        for s in subjects:
+            is_on_day = model.NewBoolVar(f'{s}_on_day_{day_slots}')
+            model.AddAllowedAssignments([exam[s]], [(slot,) for slot in day_slots]).OnlyEnforceIf(is_on_day)
+            model.AddForbiddenAssignments([exam[s]], [(slot,) for slot in day_slots]).OnlyEnforceIf(is_on_day.Not())
+            exams_on_day.append(is_on_day)
+        model.Add(sum(exams_on_day) <= 2)
+
+    # Minimum gap: |AI - OS| >= 2
+    diff_ai_os = model.NewIntVar(0, 6, 'diff_ai_os')
+    model.AddAbsEquality(diff_ai_os, exam['AI'] - exam['OS'])
+    model.Add(diff_ai_os >= 2)
+
+    model.Add(exam['Math'] < exam['DB'])   # Ordering
+
+    # Slot capacity (max 2 per slot)
+    for slot in slots:
+        exams_in_slot = []
+        for s in subjects:
+            is_in_slot = model.NewBoolVar(f'{s}_in_slot_{slot}')
+            model.Add(exam[s] == slot).OnlyEnforceIf(is_in_slot)
+            model.Add(exam[s] != slot).OnlyEnforceIf(is_in_slot.Not())
+            exams_in_slot.append(is_in_slot)
+        model.Add(sum(exams_in_slot) <= 2)
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print("Final Exam Schedule:")
+        results = sorted([(s, solver.Value(exam[s])) for s in subjects], key=lambda x: x[1])
+        for subject, slot in results:
+            day = (slot - 1) // 2 + 1
+            print(f"{subject:<10} : Slot {slot} (Day {day})")
+    else:
+        print("No feasible schedule found.")
+
+if __name__ == "__main__":
+    solve_exam_schedule()
+
+
+================================================================================
+  SECTION 20 — CSP: UNIVERSITY COURSE TIMETABLING (Rooms + Times)
+================================================================================
+  What it does:
+    Assigns 6 courses to time slots AND rooms, respecting enrollment capacities,
+    conflict pairs, and special slot restrictions.
+
+  Constraints:
+    - Conflict pairs: Cannot be in the same time slot.
+    - Room capacity: Each course is assigned only to rooms large enough for it.
+      Uses BoolVars per (course, room) pair and AddExactlyOne.
+    - No double-booking: If two courses share a time slot, they must be in
+      different rooms. (Uses a "same_time" BoolVar + implication.)
+    - Special: ML401 must be in slots 3 or 4; DS202 in slots 1 or 2.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+def solve_course_timetabling():
+    model = cp_model.CpModel()
+    courses    = ['CS101','CS102','AI201','DS202','SE301','ML401']
+    enrollment = {'CS101':35,'CS102':50,'AI201':45,'DS202':60,'SE301':30,'ML401':80}
+    rooms = ['R1','R2','R3']; room_capacities = [40, 60, 100]
+    time_slots = [1, 2, 3, 4]
+    conflicts = [('CS101','CS102'),('CS102','AI201'),('AI201','ML401'),('DS202','SE301')]
+
+    timeslot = {c: model.NewIntVar(1, 4, f'timeslot_{c}') for c in courses}
+    room_idx  = {c: model.NewIntVar(0, 2, f'room_{c}')    for c in courses}
+
+    for c1, c2 in conflicts:
+        model.Add(timeslot[c1] != timeslot[c2])
+
+    for c in courses:
+        room_literals = []
+        for r in range(len(rooms)):
+            lit = model.NewBoolVar(f'{c}_is_in_{rooms[r]}')
+            model.Add(room_idx[c] == r).OnlyEnforceIf(lit)
+            model.Add(room_idx[c] != r).OnlyEnforceIf(lit.Not())
+            room_literals.append(lit)
+            if room_capacities[r] < enrollment[c]:
+                model.Add(lit == 0)          # too small
+        model.AddExactlyOne(room_literals)
+
+    for i in range(len(courses)):
+        for j in range(i+1, len(courses)):
+            c1, c2 = courses[i], courses[j]
+            same_time = model.NewBoolVar(f'{c1}_{c2}_same_time')
+            model.Add(timeslot[c1] == timeslot[c2]).OnlyEnforceIf(same_time)
+            model.Add(timeslot[c1] != timeslot[c2]).OnlyEnforceIf(same_time.Not())
+            model.Add(room_idx[c1] != room_idx[c2]).OnlyEnforceIf(same_time)
+
+    model.Add(timeslot['ML401'] >= 3)   # ML401 in slot 3 or 4
+    model.Add(timeslot['DS202'] <= 2)   # DS202 in slot 1 or 2
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        print(f'{"Course":<10} | {"Time Slot":<10} | {"Room":<10} | {"Students":<10}')
+        print('-' * 50)
+        for c in courses:
+            t = solver.Value(timeslot[c])
+            r = rooms[solver.Value(room_idx[c])]
+            print(f'{c:<10} | {t:<10} | {r:<10} | {enrollment[c]:<10}')
+    else:
+        print('No feasible timetable found.')
+
+if __name__ == '__main__':
+    solve_course_timetabling()
+
+
+================================================================================
+  SECTION 21 — CSP: NUCES EXAM SCHEDULE (Rooms + Times + Conditions)
+================================================================================
+  What it does:
+    Assigns 6 courses to 3 rooms AND 3 time slots (Morning/Noon/Evening) with
+    domain restrictions and conditional "if-then" constraints.
+
+  Conditional constraints (OnlyEnforceIf pattern):
+    - If DSA is in R1 → OOP must be in Morning.
+    - If SE is NOT in Noon → CN must be in Noon.
+    - If AI is in Evening → DBMS must be in R2; otherwise DBMS in R1.
+    These are modeled by creating a BoolVar for the condition and using
+    .OnlyEnforceIf(bool_var) or .OnlyEnforceIf(bool_var.Not()).
+
+  No-conflict rule: For every pair of courses, if they share the same room
+    AND the same time slot simultaneously, that's a conflict. Enforced using
+    a "same_room_time" BoolVar per pair.
+--------------------------------------------------------------------------------
+
+from ortools.sat.python import cp_model
+
+def solve_exam_schedule_nuces():
+    model = cp_model.CpModel()
+    courses = ['OOP','DSA','AI','DBMS','CN','SE']
+    rooms   = ['R1','R2','R3']
+    times   = ['Morning','Noon','Evening']
+
+    room = {c: model.NewIntVar(0, 2, f'room_{c}') for c in courses}
+    time = {c: model.NewIntVar(0, 2, f'time_{c}') for c in courses}
+
+    model.Add(room['OOP'] != 2)    # OOP not in R3
+    model.Add(room['AI']  != 2)    # AI in R1 or R2
+    model.Add(time['CN']  != 2)    # CN not Evening
+    model.Add(time['DBMS']== 0)    # DBMS must be Morning
+
+    # No two courses share same room AND same time
+    for i in range(len(courses)):
+        for j in range(i+1, len(courses)):
+            c1, c2 = courses[i], courses[j]
+            same_room_time = model.NewBoolVar(f'{c1}_{c2}_conflict')
+            model.Add(room[c1] == room[c2]).OnlyEnforceIf(same_room_time)
+            model.Add(time[c1] == time[c2]).OnlyEnforceIf(same_room_time)
+            model.Add(room[c1] != room[c2]).OnlyEnforceIf(same_room_time.Not())
+            model.Add(time[c1] != time[c2]).OnlyEnforceIf(same_room_time.Not())
+
+    # Conditional: if DSA in R1 -> OOP in Morning
+    dsa_r1 = model.NewBoolVar('dsa_r1')
+    model.Add(room['DSA'] == 0).OnlyEnforceIf(dsa_r1)
+    model.Add(room['DSA'] != 0).OnlyEnforceIf(dsa_r1.Not())
+    model.Add(time['OOP'] == 0).OnlyEnforceIf(dsa_r1)
+
+    # Conditional: if SE not Noon -> CN must be Noon
+    se_not_noon = model.NewBoolVar('se_not_noon')
+    model.Add(time['SE'] != 1).OnlyEnforceIf(se_not_noon)
+    model.Add(time['SE'] == 1).OnlyEnforceIf(se_not_noon.Not())
+    model.Add(time['CN'] == 1).OnlyEnforceIf(se_not_noon)
+
+    # Conditional: if AI Evening -> DBMS in R2; else DBMS in R1
+    ai_evening = model.NewBoolVar('ai_evening')
+    model.Add(time['AI'] == 2).OnlyEnforceIf(ai_evening)
+    model.Add(time['AI'] != 2).OnlyEnforceIf(ai_evening.Not())
+    model.Add(room['DBMS'] == 1).OnlyEnforceIf(ai_evening)
+    model.Add(room['DBMS'] == 0).OnlyEnforceIf(ai_evening.Not())
+
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print("\nFINAL EXAM SCHEDULE")
+        print("-" * 40)
+        for c in courses:
+            r = rooms[solver.Value(room[c])]
+            t = times[solver.Value(time[c])]
+            print(f"{c:<6} -> {r:<5} | {t}")
+    else:
+        print("No feasible solution found.")
+
+solve_exam_schedule_nuces()
+
+
+================================================================================
+  SECTION 22 — MARKOV CHAIN SIMULATION (Basic Two-State)
+================================================================================
+  What it does:
+    Simulates a simple two-state Markov process (Red / Blue) for a given
+    number of steps using a transition matrix.
+
+  How it works:
+    - transition_matrix[i][j] = probability of moving from state i to state j.
+    - simulate_markov_process(initial_state, num_steps): Starts at the given
+      state, then repeatedly samples the next state using np.random.choice
+      with probabilities from the current row of the transition matrix.
+    - Returns the full sequence of states as a list.
+--------------------------------------------------------------------------------
+
+import numpy as np
+
+states = ["Red", "Blue"]
+transition_matrix = np.array([
+    [0.5, 0.5],   # From Red  -> Red(50%), Blue(50%)
+    [0.5, 0.5]    # From Blue -> Red(50%), Blue(50%)
+])
+
+def simulate_markov_process(initial_state, num_steps):
+    current_state = initial_state
+    state_sequence = [current_state]
+    for _ in range(num_steps):
+        if current_state == "Red":
+            next_state = np.random.choice(states, p=transition_matrix[0])
+        else:
+            next_state = np.random.choice(states, p=transition_matrix[1])
+        state_sequence.append(next_state)
+        current_state = next_state
+    return state_sequence
+
+if __name__ == "__main__":
+    initial_state = "Red"
+    num_steps = 10
+    state_sequence = simulate_markov_process(initial_state, num_steps)
+    print(f"State sequence for {num_steps} steps starting from {initial_state}:")
+    print(" -> ".join(state_sequence))
+
+
+================================================================================
+  SECTION 23 — WEATHER MARKOV MODEL + MONTE CARLO
+================================================================================
+  What it does:
+    Simulates a 3-state weather system (Sunny, Cloudy, Rainy) and uses Monte
+    Carlo simulation over 10,000 runs to estimate the probability of getting
+    at least 3 rainy days in a 10-day forecast starting from Sunny.
+
+  Functions:
+    - simulate_weather(start_state, days): Generates a day-by-day weather
+      sequence by sampling from the transition matrix at each step.
+    - Monte Carlo block: Runs simulate_weather 10,000 times and counts how
+      many simulations had 3+ rainy days.
+--------------------------------------------------------------------------------
+
+import numpy as np
+
+def solve_weather_markov():
+    states = ['Sunny', 'Cloudy', 'Rainy']
+    transition_matrix = np.array([
+        [0.7, 0.2, 0.1],   # From Sunny:  70% stay, 20% cloudy, 10% rainy
+        [0.3, 0.4, 0.3],   # From Cloudy: 30% sunny, 40% stay, 30% rainy
+        [0.2, 0.3, 0.5]    # From Rainy:  20% sunny, 30% cloudy, 50% stay
+    ])
+
+    def simulate_weather(start_state, days):
+        current_state_idx = states.index(start_state)
+        sequence = [start_state]
+        for _ in range(days - 1):
+            current_state_idx = np.random.choice([0,1,2], p=transition_matrix[current_state_idx])
+            sequence.append(states[current_state_idx])
+        return sequence
+
+    # Simulate 10-day forecast
+    forecast = simulate_weather('Sunny', 10)
+    print(f"10-Day Forecast: {' -> '.join(forecast)}")
+
+    # Monte Carlo: probability of >= 3 rainy days
+    iterations = 10000
+    at_least_3_rainy = sum(
+        1 for _ in range(iterations)
+        if simulate_weather('Sunny', 10).count('Rainy') >= 3
+    )
+    prob = (at_least_3_rainy / iterations) * 100
+    print(f"\nProbability of at least 3 rainy days: {prob:.2f}%")
+
+if __name__ == '__main__':
+    solve_weather_markov()
+
+
+================================================================================
+  SECTION 24 — E-COMMERCE ORDER LIFECYCLE (Markov + Monte Carlo)
+================================================================================
+  What it does:
+    Models an e-commerce order's journey through states (Placed -> Processing
+    -> Shipped -> Delivered/Returned/Cancelled) as a Markov chain. Uses Monte
+    Carlo to estimate the probability an order ends up Returned.
+
+  States (absorbing states are end-states):
+    0: Order Placed, 1: Processing, 2: Shipped,
+    3: Delivered (absorbing), 4: Returned (absorbing), 5: Cancelled (absorbing)
+
+  Functions:
+    - simulate_order_journey(start_state_idx, max_steps): Walks through the
+      Markov chain until hitting an absorbing state (3, 4, or 5).
+    - Monte Carlo block: Runs 10,000 simulations and counts "Returned" outcomes.
+--------------------------------------------------------------------------------
+
+import numpy as np
+
+def solve_order_lifecycle_markov():
+    states = ['Order Placed','Processing','Shipped','Delivered','Returned','Cancelled']
+    transition_matrix = np.array([
+        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],   # Placed -> Processing (100%)
+        [0.0, 0.2, 0.7, 0.0, 0.0, 0.1],   # Processing -> Stay/Ship/Cancel
+        [0.0, 0.0, 0.1, 0.8, 0.1, 0.0],   # Shipped -> Stay/Deliver/Return
+        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],   # Delivered (absorbing)
+        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],   # Returned  (absorbing)
+        [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]    # Cancelled (absorbing)
+    ])
+
+    def simulate_order_journey(start_state_idx, max_steps=20):
+        current_state_idx = start_state_idx
+        for _ in range(max_steps):
+            if current_state_idx in [3, 4, 5]: break
+            current_state_idx = np.random.choice(len(states), p=transition_matrix[current_state_idx])
+        return states[current_state_idx]
+
+    iterations = 10000
+    returned_count = sum(
+        1 for _ in range(iterations)
+        if simulate_order_journey(0) == 'Returned'
+    )
+    probability = (returned_count / iterations) * 100
+    print(f"Results of {iterations} Monte Carlo Simulations:")
+    print(f"Estimated probability order is eventually Returned: {probability:.2f}%")
+
+if __name__ == '__main__':
+    solve_order_lifecycle_markov()
+
+
+================================================================================
+  SECTION 25 — BAYESIAN NETWORK: BURGLARY/ALARM (Classic)
+================================================================================
+  What it does:
+    The classic AI textbook Bayesian Network. Models the probability that a
+    Burglary or Earthquake caused an Alarm to go off, which may trigger calls
+    from John or Mary.
+
+  Structure:
+    Burglary -> Alarm <- Earthquake
+    Alarm -> JohnCalls
+    Alarm -> MaryCalls
+
+  Key pgmpy concepts:
+    - DiscreteBayesianNetwork(edges): Defines the graph structure.
+    - TabularCPD(variable, variable_card, values, evidence, evidence_card):
+      Defines the conditional probability table. variable_card = number of
+      possible values. Columns of 'values' correspond to evidence combinations.
+    - model.add_cpds(...): Attaches all CPDs to the model.
+    - model.check_model(): Validates that probabilities sum to 1 and the
+      structure is consistent. Raises AssertionError if invalid.
+    - VariableElimination(model): Creates an inference engine.
+    - inference.query(variables, evidence): Computes P(variables | evidence).
+--------------------------------------------------------------------------------
+
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+model = DiscreteBayesianNetwork([
+    ('Burglary', 'Alarm'), ('Earthquake', 'Alarm'),
+    ('Alarm', 'JohnCalls'), ('Alarm', 'MaryCalls')
+])
+
+cpd_burglary   = TabularCPD(variable='Burglary',   variable_card=2, values=[[0.999],[0.001]])
+cpd_earthquake = TabularCPD(variable='Earthquake', variable_card=2, values=[[0.998],[0.002]])
+
+cpd_alarm = TabularCPD(
+    variable='Alarm', variable_card=2,
+    values=[
+        [0.999, 0.71, 0.06, 0.05],   # Alarm = False
+        [0.001, 0.29, 0.94, 0.95]    # Alarm = True
+    ],
+    evidence=['Burglary','Earthquake'], evidence_card=[2,2]
+)
+cpd_john = TabularCPD(
+    variable='JohnCalls', variable_card=2,
+    values=[[0.3, 0.9],[0.7, 0.1]],
+    evidence=['Alarm'], evidence_card=[2]
+)
+cpd_mary = TabularCPD(
+    variable='MaryCalls', variable_card=2,
+    values=[[0.2, 0.99],[0.8, 0.01]],
+    evidence=['Alarm'], evidence_card=[2]
+)
+
+model.add_cpds(cpd_burglary, cpd_earthquake, cpd_alarm, cpd_john, cpd_mary)
+assert model.check_model(), "Model is incorrect"
+
+inference = VariableElimination(model)
+result = inference.query(variables=['Burglary'], evidence={'JohnCalls':1,'MaryCalls':1})
+print(result)
+
+
+================================================================================
+  SECTION 26 — BAYESIAN NETWORK: MEDICAL DIAGNOSIS (Flu vs Cold)
+================================================================================
+  What it does:
+    Diagnoses whether a patient has Flu or Cold based on observable symptoms
+    (Fever, Cough, Fatigue, Chills).
+
+  Structure:
+    Disease -> Fever, Cough, Fatigue, Chills
+
+  Value encoding:
+    - Disease: 0=Flu, 1=Cold
+    - Symptoms: 0=Yes (symptom present), 1=No
+
+  Inference queries:
+    - P(Disease | Fever=Yes, Cough=Yes)
+    - P(Disease | Fever=Yes, Cough=Yes, Chills=Yes)
+    - P(Fatigue=Yes | Disease=Flu)
+--------------------------------------------------------------------------------
+
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+model = DiscreteBayesianNetwork([
+    ('Disease','Fever'),('Disease','Cough'),
+    ('Disease','Fatigue'),('Disease','Chills')
+])
+
+cpd_disease = TabularCPD(variable='Disease', variable_card=2, values=[[0.3],[0.7]])
+
+cpd_fever   = TabularCPD(variable='Fever',   variable_card=2, evidence=['Disease'], evidence_card=[2],
+                         values=[[0.9,0.5],[0.1,0.5]])
+cpd_cough   = TabularCPD(variable='Cough',   variable_card=2, evidence=['Disease'], evidence_card=[2],
+                         values=[[0.8,0.6],[0.2,0.4]])
+cpd_fatigue = TabularCPD(variable='Fatigue', variable_card=2, evidence=['Disease'], evidence_card=[2],
+                         values=[[0.7,0.3],[0.3,0.7]])
+cpd_chills  = TabularCPD(variable='Chills',  variable_card=2, evidence=['Disease'], evidence_card=[2],
+                         values=[[0.6,0.4],[0.4,0.6]])
+
+model.add_cpds(cpd_disease, cpd_fever, cpd_cough, cpd_fatigue, cpd_chills)
+assert model.check_model(), "Model structure or CPTs are invalid"
+
+inference = VariableElimination(model)
+
+q1 = inference.query(variables=['Disease'], evidence={'Fever':0,'Cough':0})
+print("P(Disease | Fever=Yes, Cough=Yes)"); print(q1)
+
+q2 = inference.query(variables=['Disease'], evidence={'Fever':0,'Cough':0,'Chills':0})
+print("\nP(Disease | Fever=Yes, Cough=Yes, Chills=Yes)"); print(q2)
+
+q3 = inference.query(variables=['Fatigue'], evidence={'Disease':0})
+print("\nP(Fatigue | Disease=Flu)"); print(q3)
+
+
+================================================================================
+  SECTION 27 — BAYESIAN NETWORK: STUDENT PERFORMANCE
+================================================================================
+  What it does:
+    Models a student's academic outcome based on Intelligence, StudyHours,
+    and Difficulty, which jointly determine Grade, which in turn determines
+    if the student Passes.
+
+  Structure:
+    Intelligence, StudyHours, Difficulty -> Grade -> Pass
+
+  Value encoding:
+    - Intelligence: 0=High, 1=Low
+    - StudyHours:   0=Sufficient, 1=Insufficient
+    - Difficulty:   0=Hard, 1=Easy
+    - Grade:        0=A, 1=B, 2=C
+    - Pass:         0=Yes, 1=No
+
+  Note on CPD columns:
+    For Grade, there are 2x2x2 = 8 evidence combinations, so 'values' has
+    3 rows (one per grade) and 8 columns (one per evidence combo).
+--------------------------------------------------------------------------------
+
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+model = DiscreteBayesianNetwork([
+    ('Intelligence','Grade'),('StudyHours','Grade'),
+    ('Difficulty','Grade'),('Grade','Pass')
+])
+
+cpd_i = TabularCPD(variable='Intelligence', variable_card=2, values=[[0.7],[0.3]])
+cpd_s = TabularCPD(variable='StudyHours',   variable_card=2, values=[[0.6],[0.4]])
+cpd_d = TabularCPD(variable='Difficulty',   variable_card=2, values=[[0.4],[0.6]])
+
+cpd_g = TabularCPD(
+    variable='Grade', variable_card=3,
+    values=[
+        [0.9,0.7,0.6,0.3,0.5,0.2,0.1,0.05],   # A
+        [0.08,0.2,0.3,0.4,0.3,0.4,0.4,0.25],  # B
+        [0.02,0.1,0.1,0.3,0.2,0.4,0.5,0.7]    # C
+    ],
+    evidence=['Intelligence','StudyHours','Difficulty'], evidence_card=[2,2,2]
+)
+cpd_p = TabularCPD(
+    variable='Pass', variable_card=2,
+    values=[[0.95,0.80,0.50],[0.05,0.20,0.50]],
+    evidence=['Grade'], evidence_card=[3]
+)
+
+model.add_cpds(cpd_i, cpd_s, cpd_d, cpd_g, cpd_p)
+assert model.check_model(), "Model is incorrect"
+
+inference = VariableElimination(model)
+
+q1 = inference.query(variables=['Pass'], evidence={'StudyHours':0,'Difficulty':0})
+print("P(Pass | StudyHours=Sufficient, Difficulty=Hard)"); print(q1)
+
+q2 = inference.query(variables=['Intelligence'], evidence={'Pass':0})
+print("\nP(Intelligence | Pass=Yes)"); print(q2)
+
+
+================================================================================
+  SECTION 28 — BAYESIAN NETWORK: TRAFFIC INCIDENT DETECTION
+================================================================================
+  What it does:
+    Models a traffic monitoring system where three sensors (Camera=C, Radar=R,
+    Inductive Loop=I) detect incidents and feed into a TrafficAlert (A) node,
+    which then triggers notifications (ControlRoom=N, MobileAlert=P).
+
+  Structure:
+    C, R, I -> A -> N, P
+
+  Inference:
+    - P(Alert | ControlRoomNotif=1, MobileAlert=1)
+    - P(RadarFault=1 | Alert=1)
+--------------------------------------------------------------------------------
+
+from pgmpy.models import BayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+
+model = BayesianNetwork([('C','A'),('R','A'),('I','A'),('A','N'),('A','P')])
+
+cpd_c = TabularCPD(variable='C', variable_card=2, values=[[0.94],[0.06]])
+cpd_r = TabularCPD(variable='R', variable_card=2, values=[[0.91],[0.09]])
+cpd_i = TabularCPD(variable='I', variable_card=2, values=[[0.93],[0.07]])
+
+cpd_a = TabularCPD(
+    variable='A', variable_card=2,
+    values=[
+        [0.99,0.80,0.70,0.40,0.60,0.30,0.20,0.01],  # A=No
+        [0.01,0.20,0.30,0.60,0.40,0.70,0.80,0.99]   # A=Yes
+    ],
+    evidence=['C','R','I'], evidence_card=[2,2,2]
+)
+cpd_n = TabularCPD(variable='N', variable_card=2,
+                   values=[[0.97,0.03],[0.03,0.97]], evidence=['A'], evidence_card=[2])
+cpd_p = TabularCPD(variable='P', variable_card=2,
+                   values=[[0.96,0.12],[0.04,0.88]], evidence=['A'], evidence_card=[2])
+
+model.add_cpds(cpd_c, cpd_r, cpd_i, cpd_a, cpd_n, cpd_p)
+if model.check_model():
+    inference = VariableElimination(model)
+    q1 = inference.query(variables=['A'], evidence={'N':1,'P':1})
+    print("--- P(Alert | N=1, P=1) ---"); print(q1)
+    q2 = inference.query(variables=['R'], evidence={'A':1})
+    print("\n--- P(RadarFault=1 | Alert=1) ---"); print(q2)
+else:
+    print("Model Validation Failed!")
+
+
+================================================================================
+  SECTION 29 — ML: CALIFORNIA HOUSING REGRESSION
+================================================================================
+  What it does:
+    Loads the California Housing dataset, performs EDA, trains a Linear
+    Regression and Decision Tree Regressor, and evaluates both with MSE and R2.
+
+  Pipeline steps:
+    1. fetch_california_housing(): Built-in sklearn dataset.
+    2. EDA: head(), info(), describe(), isnull().sum(), scatter plot, heatmap.
+    3. Preprocessing: Drop target, StandardScaler on features.
+    4. Train-test split (80/20), fit both models.
+    5. Evaluation: MSE and R2 for both. Actual vs Predicted scatter plots.
+    6. Conclusion: Print which model won based on R2.
+--------------------------------------------------------------------------------
+
+import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import fetch_california_housing
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+
+data = fetch_california_housing()
+df = pd.DataFrame(data.data, columns=data.feature_names)
+df['MedHouseVal'] = data.target
+
+print("--- Dataset Head ---"); print(df.head())
+print("--- Summary Statistics ---"); print(df.describe())
+print("--- Missing Values ---"); print(df.isnull().sum())
+
+plt.figure(); plt.scatter(df['MedInc'], df['MedHouseVal'])
+plt.xlabel("Median Income"); plt.ylabel("House Value")
+plt.title("Median Income vs House Value"); plt.show()
+
+plt.figure(figsize=(10,8)); sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+plt.title("Correlation Heatmap"); plt.show()
+
+X = df.drop('MedHouseVal', axis=1); y = df['MedHouseVal']
+scaler = StandardScaler(); X_scaled = scaler.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+lr_model = LinearRegression(); lr_model.fit(X_train, y_train)
+dt_model = DecisionTreeRegressor(random_state=42); dt_model.fit(X_train, y_train)
+
+y_pred_lr = lr_model.predict(X_test); y_pred_dt = dt_model.predict(X_test)
+mse_lr = mean_squared_error(y_test, y_pred_lr); r2_lr = r2_score(y_test, y_pred_lr)
+mse_dt = mean_squared_error(y_test, y_pred_dt); r2_dt = r2_score(y_test, y_pred_dt)
+
+print("\n--- Model Performance ---")
+print("Linear Regression -> MSE:", mse_lr, " R2:", r2_lr)
+print("Decision Tree     -> MSE:", mse_dt, " R2:", r2_dt)
+
+if r2_dt > r2_lr: print("\nDecision Tree performs better based on R2 score.")
+else:             print("\nLinear Regression performs better based on R2 score.")
+
+
+================================================================================
+  SECTION 30 — ML: TITANIC CLASSIFICATION
+================================================================================
+  What it does:
+    Loads the Titanic dataset, preprocesses it (missing values, encoding,
+    scaling), trains Logistic Regression and Decision Tree Classifier, and
+    evaluates with accuracy and confusion matrices.
+
+  Pipeline steps:
+    1. sns.load_dataset('titanic'): Built-in seaborn dataset.
+    2. EDA: head(), info(), describe(), count plot, correlation heatmap.
+    3. Preprocessing: Fill missing age/embarked, drop irrelevant columns,
+       one-hot encode sex and embarked, StandardScaler.
+    4. Train-test split (80/20), fit both classifiers.
+    5. Evaluation: Accuracy, confusion matrices (visualized), bar chart comparison.
+    6. Conclusion: Print the better model based on accuracy.
+--------------------------------------------------------------------------------
+
+import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
+
+df = sns.load_dataset('titanic')
+print(df.head()); print(df.describe())
+
+plt.figure(); sns.countplot(x='survived', data=df); plt.title('Survival Count'); plt.show()
+plt.figure(figsize=(10,8))
+sns.heatmap(df.select_dtypes(include=np.number).corr(), annot=True, cmap='coolwarm')
+plt.title('Correlation Heatmap'); plt.show()
+
+df['age'].fillna(df['age'].median(), inplace=True)
+df['embarked'].fillna(df['embarked'].mode()[0], inplace=True)
+df.drop(['deck','embark_town','alive','class','who','adult_male'], axis=1, inplace=True)
+df = pd.get_dummies(df, columns=['sex','embarked'], drop_first=True)
+
+X = df.drop('survived', axis=1); y = df['survived']
+scaler = StandardScaler(); X_scaled = scaler.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+lr_model = LogisticRegression(max_iter=1000); lr_model.fit(X_train, y_train)
+dt_model = DecisionTreeClassifier(random_state=42); dt_model.fit(X_train, y_train)
+
+y_pred_lr = lr_model.predict(X_test); y_pred_dt = dt_model.predict(X_test)
+acc_lr = accuracy_score(y_test, y_pred_lr); acc_dt = accuracy_score(y_test, y_pred_dt)
+print("\n--- Model Accuracy ---")
+print("Logistic Regression:", acc_lr); print("Decision Tree:", acc_dt)
+
+ConfusionMatrixDisplay(confusion_matrix(y_test, y_pred_lr)).plot()
+plt.title('Logistic Regression Confusion Matrix'); plt.show()
+ConfusionMatrixDisplay(confusion_matrix(y_test, y_pred_dt)).plot()
+plt.title('Decision Tree Confusion Matrix'); plt.show()
+
+plt.bar(['Logistic Regression','Decision Tree'], [acc_lr, acc_dt])
+plt.ylabel('Accuracy'); plt.title('Model Accuracy Comparison'); plt.show()
+
+if acc_dt > acc_lr: print("Decision Tree performs better.")
+else: print("Logistic Regression performs better.")
+
+
+================================================================================
+  SECTION 31 — ML: IRIS K-MEANS CLUSTERING
+================================================================================
+  What it does:
+    Loads the Iris dataset and clusters it using K-Means. Uses the Silhouette
+    Method to find the optimal number of clusters, then visualizes results.
+
+  Pipeline steps:
+    1. load_iris(): Built-in sklearn dataset (150 samples, 4 features).
+    2. EDA: head(), info(), describe(), scatter plot, heatmap.
+    3. Preprocessing: Drop 'species' (unsupervised), StandardScaler.
+    4. Silhouette loop: Test k=2..10, compute silhouette score for each.
+    5. Pick optimal_k = k with highest silhouette score.
+    6. Final K-Means: Fit with optimal_k, visualize clusters + centroids.
+    7. Optional: Compare cluster colors vs actual species labels.
+
+  silhouette_score:
+    Measures how similar each point is to its own cluster vs other clusters.
+    Ranges from -1 to 1; higher is better.
+--------------------------------------------------------------------------------
+
+import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+data = load_iris()
+df = pd.DataFrame(data.data, columns=data.feature_names)
+df['species'] = data.target
+
+print(df.head()); print(df.describe())
+print("--- Missing Values ---"); print(df.isnull().sum())
+
+plt.figure(); plt.scatter(df['sepal length (cm)'], df['petal length (cm)'])
+plt.xlabel('Sepal Length'); plt.ylabel('Petal Length'); plt.title('Sepal vs Petal Length'); plt.show()
+plt.figure(figsize=(8,6)); sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+plt.title('Correlation Heatmap'); plt.show()
+
+X = df.drop('species', axis=1)
+scaler = StandardScaler(); X_scaled = scaler.fit_transform(X)
+
+sil_scores = []
+k_values = range(2, 11)
+for k in k_values:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    labels = kmeans.fit_predict(X_scaled)
+    sil_scores.append(silhouette_score(X_scaled, labels))
+
+plt.figure(); plt.plot(k_values, sil_scores, marker='o')
+plt.xlabel('Number of Clusters (k)'); plt.ylabel('Silhouette Score')
+plt.title('Silhouette Method for Optimal k'); plt.show()
+
+optimal_k = k_values[np.argmax(sil_scores)]
+print("\nOptimal k:", optimal_k)
+
+kmeans_final = KMeans(n_clusters=optimal_k, random_state=42)
+clusters = kmeans_final.fit_predict(X_scaled)
+print("Final Silhouette Score:", silhouette_score(X_scaled, clusters))
+
+plt.figure()
+plt.scatter(X_scaled[:,0], X_scaled[:,2], c=clusters)
+centroids = kmeans_final.cluster_centers_
+plt.scatter(centroids[:,0], centroids[:,2], marker='X', s=200)
+plt.xlabel('Feature 1 (scaled)'); plt.ylabel('Feature 3 (scaled)')
+plt.title('K-Means Clustering with Centroids'); plt.show()
+
+
+================================================================================
+  SECTION 32 — ML: MALL CUSTOMERS K-MEANS (Elbow Method)
+================================================================================
+  What it does:
+    Clusters mall customers by Annual Income and Spending Score using K-Means.
+    Uses the Elbow Method (WCSS) to find the optimal k, then visualizes the
+    5 customer segments.
+
+  Key steps:
+    - Elbow Method: Plot WCSS (Within-Cluster Sum of Squares = inertia_) for
+      k=1..10. The "elbow" in the curve is the optimal k.
+    - StandardScaler before final K-Means for fair distance calculation.
+    - k-means++ initialization (init='k-means++'): Smarter initial centroids
+      that speed up convergence.
+    - Visualize 5 clusters with different colors and mark centroids with 'X'.
+  
+  File required: Mall_Customers.csv (columns: CustomerID, Gender, Age,
+    Annual Income (k$), Spending Score (1-100))
+--------------------------------------------------------------------------------
+
+import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+df = pd.read_csv('Mall_Customers.csv')
+print(df.head())
+
+X = df.iloc[:, [3, 4]].values   # Annual Income and Spending Score
+
+# Elbow Method
+wcss = []
+for i in range(1, 11):
+    kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)
+    kmeans.fit(X); wcss.append(kmeans.inertia_)
+plt.plot(range(1,11), wcss); plt.title('Elbow Method')
+plt.xlabel('Number of Clusters (k)'); plt.ylabel('WCSS'); plt.show()
+
+scaler = StandardScaler(); X_scaled = scaler.fit_transform(X)
+
+kmeans = KMeans(n_clusters=5, init='k-means++', random_state=42)
+y_pred = kmeans.fit_predict(X_scaled)
+
+for i in range(5):
+    plt.scatter(X_scaled[y_pred==i,0], X_scaled[y_pred==i,1], s=100, label=f'Cluster {i+1}')
+plt.scatter(kmeans.cluster_centers_[:,0], kmeans.cluster_centers_[:,1], s=300, marker='X', label='Centroids')
+plt.title('Customer Segments (K-Means)')
+plt.xlabel('Annual Income (scaled)'); plt.ylabel('Spending Score (scaled)')
+plt.legend(); plt.show()
+
+
+================================================================================
+  SECTION 33 — ML: K-MEANS ALL FEATURES (Scaling vs No Scaling)
+================================================================================
+  What it does:
+    Compares K-Means results WITH and WITHOUT scaling on all Mall Customers
+    features. Age is intentionally kept unscaled in the "with scaling" version
+    as a partial-scaling demonstration.
+
+  Key point:
+    Without scaling, features with larger magnitudes (e.g., Annual Income in
+    thousands) dominate distance calculations. Scaling brings all features to
+    the same range, producing more balanced clusters.
+--------------------------------------------------------------------------------
+
+import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+df = pd.read_csv('Mall_Customers.csv')
+X = df.drop(columns=['CustomerID'])
+X['Gender'] = X['Gender'].map({'Male':0,'Female':1})
+
+# Without scaling
+kmeans_no_scale = KMeans(n_clusters=5, random_state=42)
+df['Cluster_No_Scaling'] = kmeans_no_scale.fit_predict(X)
+
+# With scaling (Age left unscaled)
+age = X[['Age']]; features = X.drop(columns=['Age'])
+scaler = StandardScaler(); features_scaled = scaler.fit_transform(features)
+X_scaled_final = np.concatenate([age.values, features_scaled], axis=1)
+kmeans_scaled = KMeans(n_clusters=5, random_state=42)
+df['Cluster_With_Scaling'] = kmeans_scaled.fit_predict(X_scaled_final)
+
+plt.figure(figsize=(12,5))
+plt.subplot(1,2,1)
+plt.scatter(df['Annual Income (k$)'], df['Spending Score (1-100)'], c=df['Cluster_No_Scaling'])
+plt.title('WITHOUT Scaling'); plt.xlabel('Annual Income (k$)'); plt.ylabel('Spending Score')
+plt.subplot(1,2,2)
+plt.scatter(df['Annual Income (k$)'], df['Spending Score (1-100)'], c=df['Cluster_With_Scaling'])
+plt.title('WITH Scaling (Age not scaled)'); plt.xlabel('Annual Income (k$)')
+plt.tight_layout(); plt.show()
+print(df.head())
+
+
+================================================================================
+  SECTION 34 — ML: VEHICLE CLUSTERING (Scaling vs No Scaling)
+================================================================================
+  What it does:
+    Clusters 10 vehicles into 3 groups based on mileage, fuel efficiency,
+    maintenance cost, and vehicle type. Compares clusters with/without scaling.
+    vehicle_type is categorical and kept unscaled in the scaled version.
+--------------------------------------------------------------------------------
+
+import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+data = {
+    'vehicle_serial_no': [5,3,8,2,4,7,6,10,1,9],
+    'mileage':           [150000,120000,250000,80000,100000,220000,180000,300000,75000,280000],
+    'fuel_efficiency':   [15,18,10,22,20,12,16,8,24,9],
+    'maintenance_cost':  [5000,4000,7000,2000,3000,6500,5500,8000,1500,7500],
+    'vehicle_type':      ['SUV','Sedan','Truck','Hatchback','Sedan','Truck','SUV','Truck','Hatchback','SUV']
+}
+df = pd.DataFrame(data)
+df['vehicle_type'] = df['vehicle_type'].map({'SUV':0,'Sedan':1,'Truck':2,'Hatchback':3})
+X = df.drop(columns=['vehicle_serial_no'])
+
+kmeans_no = KMeans(n_clusters=3, random_state=42)
+df['Cluster_No_Scaling'] = kmeans_no.fit_predict(X)
+
+vehicle_type = X[['vehicle_type']]; features = X.drop(columns=['vehicle_type'])
+scaler = StandardScaler(); features_scaled = scaler.fit_transform(features)
+X_scaled_final = np.concatenate([features_scaled, vehicle_type.values], axis=1)
+kmeans_sc = KMeans(n_clusters=3, random_state=42)
+df['Cluster_With_Scaling'] = kmeans_sc.fit_predict(X_scaled_final)
+
+plt.figure(figsize=(12,5))
+plt.subplot(1,2,1); plt.scatter(df['mileage'],df['maintenance_cost'],c=df['Cluster_No_Scaling'])
+plt.title('Without Scaling'); plt.xlabel('Mileage'); plt.ylabel('Maintenance Cost')
+plt.subplot(1,2,2); plt.scatter(df['mileage'],df['maintenance_cost'],c=df['Cluster_With_Scaling'])
+plt.title('With Scaling'); plt.xlabel('Mileage')
+plt.tight_layout(); plt.show()
+print(df)
+
+
+================================================================================
+  SECTION 35 — ML: STUDENT CLUSTERING (WCSS Elbow Method)
+================================================================================
+  What it does:
+    Groups 10 students into clusters based on GPA, study hours, and attendance
+    rate. Uses the Elbow Method (WCSS) to pick optimal k, then visualizes.
+
+  Steps:
+    1. Define student data and scale all features.
+    2. Loop k=2..6, compute WCSS (inertia_) for each k.
+    3. Plot elbow curve, manually pick k (e.g., 3).
+    4. Train final K-Means, add cluster labels to the dataframe.
+    5. Scatter plot: study_hours vs GPA, colored by cluster.
+--------------------------------------------------------------------------------
+
+import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+data = {
+    'student_id': [1,2,3,4,5,6,7,8,9,10],
+    'GPA':           [3.5,2.8,3.9,1.9,2.5,3.2,3.8,2.0,3.0,3.6],
+    'study_hours':   [15,8,20,5,7,12,18,4,10,16],
+    'attendance_rate':[90,70,95,60,65,85,92,55,75,88]
+}
+df = pd.DataFrame(data)
+X = df[['GPA','study_hours','attendance_rate']]
+scaler = StandardScaler(); X_scaled = scaler.fit_transform(X)
+
+wcss = []
+for i in range(2, 7):
+    kmeans = KMeans(n_clusters=i, random_state=42)
+    kmeans.fit(X_scaled); wcss.append(kmeans.inertia_)
+plt.plot(range(2,7), wcss, marker='o')
+plt.title('Elbow Method'); plt.xlabel('Number of Clusters (K)'); plt.ylabel('WCSS'); plt.show()
+
+optimal_k = 3
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+clusters = kmeans.fit_predict(X_scaled)
+df['Cluster'] = clusters
+
+plt.figure()
+for cluster in range(optimal_k):
+    subset = df[df['Cluster'] == cluster]
+    plt.scatter(subset['study_hours'], subset['GPA'], label=f'Cluster {cluster}')
+plt.xlabel('Study Hours'); plt.ylabel('GPA')
+plt.title('Student Clusters'); plt.legend(); plt.show()
+print(df[['student_id','GPA','study_hours','attendance_rate','Cluster']])
+
+
+================================================================================
+  SECTION 36 — ML: FULL REGRESSION PIPELINE (CSV Input)
+================================================================================
+  What it does:
+    A complete, reusable regression pipeline for any CSV dataset. Covers
+    preprocessing, training three models, cross-validation, evaluation, and
+    best-model visualization.
+
+  Pipeline steps:
+    1. Load CSV, print shape + statistics.
+    2. Fill missing values with column median.
+    3. Visualize target distribution (histplot) and correlation heatmap.
+    4. Drop ID columns if present, one-hot encode categoricals (get_dummies).
+    5. StandardScaler, 75/25 train-test split.
+    6. Train: Linear Regression, KNN (k=5), Decision Tree.
+    7. 10-fold cross-validation (R2 scoring) for each model.
+    8. Evaluate all models: MAE, MSE, RMSE, R2 in a table.
+    9. Best model = highest CV R2 mean. Scatter: Actual vs Predicted.
+
+  Replace 'house_prices.csv' and 'SalePrice' with your own file and target.
+--------------------------------------------------------------------------------
+
+import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+df = pd.read_csv('house_prices.csv')
+print(f"Dataset Dimensions: {df.shape}")
+print("\nStatistical Summary:\n", df.describe())
+
+df = df.fillna(df.median(numeric_only=True))
+
+plt.figure(figsize=(12,5))
+plt.subplot(1,2,1); sns.histplot(df['SalePrice'], kde=True); plt.title('SalePrice Distribution')
+plt.subplot(1,2,2); sns.heatmap(df.corr(numeric_only=True), annot=False, cmap='coolwarm')
+plt.title('Correlation Heatmap'); plt.show()
+
+for col in ['Id','HouseId','EmployeeNumber']:
+    if col in df.columns: df.drop(col, axis=1, inplace=True)
+
+X = df.drop('SalePrice', axis=1)
+X = pd.get_dummies(X, drop_first=True)
+y = df['SalePrice']
+
+scaler = StandardScaler(); X_scaled = scaler.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, random_state=42)
+
+models = {
+    "Linear Regression": LinearRegression(),
+    "KNN (k=5)":         KNeighborsRegressor(n_neighbors=5, metric='euclidean'),
+    "Decision Tree":     DecisionTreeRegressor(max_depth=5, min_samples_split=10,
+                                               min_samples_leaf=5, random_state=42)
+}
+
+results = {}
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    cv_scores = cross_val_score(model, X_train, y_train, cv=10, scoring='r2')
+    results[name] = {"Model": model, "CV_R2_Mean": cv_scores.mean()}
+
+def evaluate(y_true, y_pred):
+    mae  = mean_absolute_error(y_true, y_pred)
+    mse  = mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
+    r2   = r2_score(y_true, y_pred)
+    return mae, mse, rmse, r2
+
+print("\n" + "="*50)
+print(f"{'Model':<20} | {'MAE':<10} | {'RMSE':<10} | {'R2':<10}")
+print("-" * 50)
+for name, info in results.items():
+    preds = info["Model"].predict(X_test)
+    mae, mse, rmse, r2 = evaluate(y_test, preds)
+    print(f"{name:<20} | {mae:<10.2f} | {rmse:<10.2f} | {r2:<10.4f}")
+
+best_model_name = max(results, key=lambda k: results[k]["CV_R2_Mean"])
+best_model = results[best_model_name]["Model"]
+y_pred_best = best_model.predict(X_test)
+
+plt.figure(figsize=(8,6))
+plt.scatter(y_test, y_pred_best, alpha=0.5)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+plt.xlabel('Actual SalePrice'); plt.ylabel('Predicted SalePrice')
+plt.title(f'Actual vs Predicted: {best_model_name}'); plt.show()
+
+
+================================================================================
+  SECTION 37 — ML: ATTRITION EDA TEMPLATE
+================================================================================
+  What it does:
+    A structured EDA (Exploratory Data Analysis) pipeline for an employee
+    attrition dataset. Covers 7 analytical tasks systematically.
+
+  Tasks:
+    1. Dataset overview: shape, dtypes, head.
+    2. Missing data: count and percentage per column.
+    3. Univariate analysis: describe() + attrition value counts.
+    4. Bivariate: encode Attrition as 0/1 numeric column.
+    5. Group comparison: mean of key numeric columns by Attrition group.
+    6. Outlier detection using IQR method per column.
+    7. Visualizations: count plot, box plot, histogram, heatmap, bar chart.
+
+  Replace 'attrition.csv' and 'Attrition' with your actual file and column.
+--------------------------------------------------------------------------------
+
+import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_theme(style="whitegrid")
+
+df = pd.read_csv('attrition.csv')
+
+print("--- Task 1: Dataset Overview ---")
+print(f"Total Records: {df.shape[0]}, Total Attributes: {df.shape[1]}")
+print(df.dtypes); print(df.head())
+
+print("\n--- Task 2: Missing Data Analysis ---")
+missing_count = df.isnull().sum(); missing_percent = (missing_count / len(df)) * 100
+missing_df = pd.DataFrame({'Count':missing_count,'Percentage':missing_percent})
+print(missing_df[missing_df['Count'] > 0])
+
+print("\n--- Task 3: Univariate Analysis ---")
+print(df.describe())
+print("\nAttrition Balance:"); print(df['Attrition'].value_counts(normalize=True))
+
+print("\n--- Task 4: Bivariate Analysis ---")
+if df['Attrition'].dtype == 'object':
+    df['Attrition_Num'] = df['Attrition'].apply(lambda x: 1 if x == 'Yes' else 0)
+else:
+    df['Attrition_Num'] = df['Attrition']
+
+print("\n--- Task 5: Group-Based Comparison ---")
+comparison_cols = ['Age','YearsAtCompany','MonthlyIncome','DistanceFromHome']
+print(df.groupby('Attrition')[comparison_cols].mean())
+
+print("\n--- Task 6: Outlier Detection (IQR Method) ---")
+outlier_cols = ['MonthlyIncome','DistanceFromHome','NumCompaniesWorked','YearsAtCompany']
+for col in outlier_cols:
+    Q1 = df[col].quantile(0.25); Q3 = df[col].quantile(0.75); IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5*IQR; upper_bound = Q3 + 1.5*IQR
+    outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
+    print(f"{col}: Found {len(outliers)} outliers.")
+
+print("\n--- Task 7: Visualizations ---")
+plt.figure(figsize=(15,12))
+plt.subplot(2,3,1); sns.countplot(data=df, x='Attrition'); plt.title('Distribution of Attrition')
+plt.subplot(2,3,2); sns.boxplot(data=df, x='Attrition', y='Age'); plt.title('Age by Attrition')
+plt.subplot(2,3,3); sns.histplot(data=df, x='MonthlyIncome', hue='Attrition', kde=True, element="step")
+plt.title('Income Distribution')
+plt.subplot(2,3,4)
+job_sat_ct = pd.crosstab(df['JobSatisfaction'], df['Attrition'], normalize='index')
+sns.heatmap(job_sat_ct, annot=True, cmap='YlGnBu'); plt.title('Job Satisfaction vs Attrition')
+plt.subplot(2,3,5); sns.barplot(data=df, x='OverTime', y='Attrition_Num')
+plt.title('Impact of Overtime on Attrition Rate')
+plt.tight_layout(); plt.show()
+
+
+================================================================================
+  SECTION 38 — ML: ATTRITION PREPROCESSING PIPELINE
+================================================================================
+  What it does:
+    A complete preprocessing pipeline for attrition data, covering missing
+    values, outlier treatment, feature engineering, encoding, scaling, and
+    class imbalance correction.
+
+  Functions:
+    - handle_missing(df): Fills categorical columns with mode, numeric with median.
+    - treat_outliers(df, columns): Caps outliers using IQR method (replaces
+      values outside [Q1-1.5*IQR, Q3+1.5*IQR] with the boundary value).
+    - engineer_features(df): Creates IncomePerYear (monthly*12),
+      SatisfactionScore (mean of two satisfaction columns), LongTenure (1 if
+      YearsAtCompany > 10, else 0).
+
+  After pipeline:
+    - LabelEncoder: Converts binary categorical (Attrition Yes/No) to 0/1.
+    - get_dummies: One-hot encodes remaining categoricals.
+    - StandardScaler: Scales selected numeric columns.
+    - RandomOverSampler: Resamples minority class to fix class imbalance.
+    - Correlation heatmap of final processed data.
+  
+  Requires: pip install imbalanced-learn
+--------------------------------------------------------------------------------
+
+import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from imblearn.over_sampling import RandomOverSampler
+
+def handle_missing(df):
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].fillna(df[col].mode()[0])
+        else:
+            df[col] = df[col].fillna(df[col].median())
+    return df
+
+def treat_outliers(df, columns):
+    for col in columns:
+        Q1, Q3 = df[col].quantile(0.25), df[col].quantile(0.75)
+        IQR = Q3 - Q1; upper = Q3 + 1.5*IQR; lower = Q1 - 1.5*IQR
+        df[col] = np.where(df[col] > upper, upper,
+                  np.where(df[col] < lower, lower, df[col]))
+    return df
+
+def engineer_features(df):
+    df['IncomePerYear']    = df['MonthlyIncome'] * 12
+    df['SatisfactionScore']= df[['JobSatisfaction','EnvironmentSatisfaction']].mean(axis=1)
+    df['LongTenure']       = (df['YearsAtCompany'] > 10).astype(int)
+    return df
+
+df = pd.read_csv('attrition.csv')
+df = handle_missing(df)
+df = engineer_features(df)
+df = treat_outliers(df, ['MonthlyIncome','DistanceFromHome','YearsAtCompany'])
+
+le = LabelEncoder()
+df['Attrition'] = le.fit_transform(df['Attrition'])
+df = pd.get_dummies(df, drop_first=True)
+
+scaler = StandardScaler()
+scale_cols = ['Age','MonthlyIncome','IncomePerYear']
+df[scale_cols] = scaler.fit_transform(df[scale_cols])
+
+X, y = df.drop('Attrition', axis=1), df['Attrition']
+ros = RandomOverSampler(random_state=42)
+X_res, y_res = ros.fit_resample(X, y)
+
+plt.figure(figsize=(10,8))
+sns.heatmap(pd.concat([X_res, y_res], axis=1).corr(), cmap='coolwarm')
+plt.show()
+
+
+================================================================================
+  SECTION 39 — UTILITY SNIPPETS
+================================================================================
+
+----------------------------------------
+  39a. Read / Write CSV
+----------------------------------------
+import pandas as pd
+
+df = pd.read_csv('data.csv')
+print(df.head())
+df.to_csv('output.csv', index=False)
+
+----------------------------------------
+  39b. Handle Missing Values
+----------------------------------------
+print(df.isnull().sum())
+
+df_cleaned = df.dropna()                             # remove all rows with NaN
+df['age'] = df['age'].fillna(df['age'].mean())       # fill numeric with mean
+df['embarked'] = df['embarked'].fillna(df['embarked'].mode()[0])  # fill cat with mode
+df = df.dropna()                                     # drop any remaining NaN rows
+
+print(df.isnull().sum())
+
+----------------------------------------
+  39c. Label Encoding (Binary Categories)
+  Use when a column has 2 categories (e.g., Male/Female, Yes/No).
+----------------------------------------
+from sklearn.preprocessing import LabelEncoder
+
+le = LabelEncoder()
+df['gender'] = le.fit_transform(df['gender'])
+print(df['gender'].head())
+
+----------------------------------------
+  39d. One-Hot Encoding (Multiple Categories)
+  Use when a column has 3+ categories (e.g., City, Color).
+  drop_first=True removes one column to avoid multicollinearity.
+----------------------------------------
+import pandas as pd
+
+df = pd.get_dummies(df, columns=['embarked'], drop_first=True)
+print(df.head())
+
+----------------------------------------
+  39e. Histogram Plot
+----------------------------------------
+df[['age', 'fare']].hist(bins=20, figsize=(8,4))
+plt.show()
+
+----------------------------------------
+  39f. Naive Bayes Classifier
+  GaussianNB assumes features follow a Gaussian (normal) distribution.
+  Good for small datasets and continuous features.
+----------------------------------------
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+import numpy as np
+
+X = np.random.rand(100, 5)
+y = np.random.randint(0, 2, 100)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+model = GaussianNB()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+print(f'Model Accuracy: {accuracy_score(y_test, y_pred):.2f}')
+
+----------------------------------------
+  39g. K-Fold Cross-Validation
+  Splits data into k=5 folds, trains on k-1, tests on 1, repeats k times.
+  Gives a more reliable accuracy estimate than a single train-test split.
+----------------------------------------
+from sklearn.model_selection import KFold
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+import numpy as np, pandas as pd, seaborn as sns
+
+df = sns.load_dataset('titanic')
+X = df[['age','fare']].fillna(df[['age','fare']].mean())
+y = df['survived']
+X = pd.DataFrame(X); y = pd.Series(y)
+
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+model = LogisticRegression()
+accuracy_scores = []
+for train_index, test_index in kf.split(X):
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy_scores.append(accuracy_score(y_test, y_pred))
+print('K-Fold CV Average Accuracy:', np.mean(accuracy_scores))
+
+----------------------------------------
+  39h. Leave-One-Out Cross-Validation (LOOCV)
+  Extreme version of K-Fold where each single sample is the test set.
+  Very accurate but slow for large datasets.
+  (Assumes X and y are already defined from above.)
+----------------------------------------
+from sklearn.model_selection import LeaveOneOut
+
+loo = LeaveOneOut()
+loo_scores = []
+for train_index, test_index in loo.split(X):
+    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    loo_scores.append(accuracy_score(y_test, y_pred))
+print('LOOCV Average Accuracy:', np.mean(loo_scores))
+
+----------------------------------------
+  39i. ROC Curve with AUC
+  ROC Curve plots True Positive Rate vs False Positive Rate at all thresholds.
+  AUC (Area Under Curve): 1.0 = perfect, 0.5 = random.
+  (Replace 'DT' with your trained classifier and ensure x_test/y_test exist.)
+----------------------------------------
+from sklearn.metrics import roc_curve, roc_auc_score
+import matplotlib.pyplot as plt
+
+probabilities = DT.predict_proba(x_test)[:, 1]   # probability of positive class
+fpr, tpr, thresholds = roc_curve(y_test, probabilities)
+roc_auc = roc_auc_score(y_test, probabilities)
+
+plt.figure(figsize=(8,6))
+plt.plot(fpr, tpr, lw=2, label=f'ROC Curve (AUC = {roc_auc:.2f})')
+plt.fill_between(fpr, tpr, alpha=0.4)
+plt.plot([0,1],[0,1], linestyle='--')
+plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
+plt.title('ROC Curve with AUC Area'); plt.legend(loc='lower right'); plt.show()
+
+
+================================================================================
+  END OF REFERENCE — HAPPY CODING!
+================================================================================
+  Quick Topic Lookup:
+    Game Trees / AI Search  -> Sections 2, 3, 4, 5, 6, 7
+    Constraint Satisfaction -> Sections 8-21
+    Probabilistic Models    -> Sections 22-28
+    Machine Learning        -> Sections 29-38
+    Utility / Snippets      -> Section 39
+================================================================================
