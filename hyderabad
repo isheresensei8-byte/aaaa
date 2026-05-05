@@ -1608,7 +1608,7 @@
     "description": "Complete California Housing Regression (EDA + Training + Evaluation)"
   },
   "Titanic Classification Complete": {
-    "prefix": "Prac ML 2 titanic classification Accuracy Confusion Matrix Comparison",
+    "prefix": "Prac ML 2 titanic classification Accuracy Confusion Matrix Comparison standardization encode heatmap",
     "body": [
       "import pandas as pd",
       "import numpy as np",
@@ -1858,7 +1858,7 @@
     "description": "Complete Iris KMeans Clustering (EDA + Silhouette + Visualization)"
   },
   "Mall Customers KMeans Clustering": {
-    "prefix": "Lab 11 mall k means",
+    "prefix": "Lab 11 mall k means elbow standardization",
     "body": [
       "import numpy as np",
       "import matplotlib.pyplot as plt",
