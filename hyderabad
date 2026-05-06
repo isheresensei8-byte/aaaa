@@ -3432,5 +3432,66 @@
     ],
     "description": "Universal K-Means clustering template with preprocessing, silhouette method, and visualization"
   },
+  "scheduling tasks with no overlap constraint": {
+  "prefix": "csp no overlap",
+    "body": [
+      "# Define task start times",
+      "task_1 = model.NewIntVar(0, 10, 'task_1')",
+      "task_2 = model.NewIntVar(0, 10, 'task_2')",
+      "task_3 = model.NewIntVar(0, 10, 'task_3')",
+      "",
+      "# Define intervals with durations",
+      "interval_1 = model.NewFixedSizeIntervalVar(task_1, 2, 'interval_1')",
+      "interval_2 = model.NewFixedSizeIntervalVar(task_2, 3, 'interval_2')",
+      "interval_3 = model.NewFixedSizeIntervalVar(task_3, 4, 'interval_3')",
+      "",
+      "# Add no-overlap constraint",
+      "model.AddNoOverlap([interval_1, interval_2, interval_3])"
+    ],
+    "description": "OR-Tools CP-SAT snippet for scheduling tasks with no overlap constraint"
+  },
+  "CP-SAT Interval Variable": {
+    "prefix": "csp interval variable",
+    "body": [
+      "# Create an interval variable",
+      "interval = model.NewFixedSizeIntervalVar(${1:start_var}, ${2:duration}, '${3:interval_name}')"
+    ],
+    "description": "Creates a fixed-size interval variable in OR-Tools CP-SAT (start + duration)"
+  },
+   "CP-SAT If-Then-Else": {
+    "prefix": "csp if else",
+    "body": [
+      "# Create a boolean variable",
+      "b = model.NewBoolVar('${1:condition_flag}')",
+      "",
+      "# Define condition and its negation",
+      "model.Add(${2:x} > ${3:5}).OnlyEnforceIf(b)",
+      "model.Add(${2:x} <= ${3:5}).OnlyEnforceIf(b.Not())",
+      "",
+      "# If-then-else consequences",
+      "model.Add(${4:y} == ${5:10}).OnlyEnforceIf(b)",
+      "model.Add(${4:y} == ${6:0}).OnlyEnforceIf(b.Not())"
+    ],
+    "description": "Implements if-then-else logic in OR-Tools CP-SAT using OnlyEnforceIf"
+  },
+"CP-SAT Count Equal Values": {
+    "prefix": "csp count equal",
+    "body": [
+      "# Boolean indicators for each variable",
+      "bools = [model.NewBoolVar(f'bool_{j}') for j in range(len(${1:var_list}))]",
+      "",
+      "# Link each bool with condition (var == target_value)",
+      "for j in range(len(${1:var_list})):",
+      "    model.Add(${1:var_list}[j] == ${2:target_value}).OnlyEnforceIf(bools[j])",
+      "    model.Add(${1:var_list}[j] != ${2:target_value}).OnlyEnforceIf(bools[j].Not())",
+      "",
+      "# Count how many satisfy the condition",
+      "count = model.NewIntVar(0, len(${1:var_list}), '${3:count}')",
+      "model.Add(count == sum(bools))"
+    ],
+    "description": "Counts how many variables in a list are equal to a target value using boolean indicators in OR-Tools CP-SAT"
+  },
+
   
+
 }
