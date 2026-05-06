@@ -41,6 +41,10 @@
    37.  Machine Learning — Attrition EDA Template
    38.  Machine Learning — Attrition Preprocessing Pipeline
    39.  Utility Snippets (Pandas, Encoding, Plotting, CV, ROC)
+40 scheduling tasks with no overlap constraint
+41 CP-SAT Interval Variable
+42 CP-SAT If-Then-Else
+43 CP-SAT Count Equal Values
 ================================================================================
 
 
@@ -2619,6 +2623,57 @@ plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
 plt.title('ROC Curve with AUC Area'); plt.legend(loc='lower right'); plt.show()
 
 
+
+40
+------------------------------------------------------------------
+You have 3 tasks with durations 2, 3, 4. All must be scheduled between time 0 and 10 with no overlap.
+task_1 = model.NewIntVar(0, 10, 'task_1')
+task_2 = model.NewIntVar(0, 10, 'task_2')
+task_3 = model.NewIntVar(0, 10, 'task_3')
+
+interval_1 = model.NewFixedSizeIntervalVar(task_1, 2, 'interval_1')
+interval_2 = model.NewFixedSizeIntervalVar(task_2, 3, 'interval_3')
+interval_3 = model.NewFixedSizeIntervalVar(task_3, 4, 'interval_4')
+
+model.AddNoOverlap([interval_1, interval_2, interval_3])
+
+
+
+41
+-----------------------------------------------------------------------------------
+interval is:
+interval = model.NewFixedIntervalVar(variable_denoting_start_or_literal, interval_len, name)
+
+
+42:
+------------------------------------------------------------------------
+if then else:
+
+b = NewBoolVar
+condition is true  → OnlyEnforceIf(b)
+condition is false → OnlyEnforceIf(b.Not())
+consequence        → OnlyEnforceIf(b)
+else                         → OnlyEnforceIf(b.Not())
+
+code:
+
+b = model.NewBoolVar('b')
+
+model.Add(x > 5).OnlyEnforceIf(b)        # condition
+model.Add(x <= 5).OnlyEnforceIf(b.Not()) # opposite
+
+model.Add(y == 10).OnlyEnforceIf(b)      # consequence
+model.Add(y == 0).OnlyEnforceIf(b.Not()) # else
+
+43
+----------------------------------------------------------------------------
+# counting how many variables in [var_list] equal [target_value]
+bools = [model.NewBoolVar(f'bool_{j}') for j in range(len(var_list))]
+for j in range(len(var_list)):
+    model.Add(var_list[j] == target_value).OnlyEnforceIf(bools[j])
+    model.Add(var_list[j] != target_value).OnlyEnforceIf(bools[j].Not())
+count = model.NewIntVar(0, len(var_list), 'count')
+model.Add(count == sum(bools))
 ================================================================================
   END OF REFERENCE — HAPPY CODING!
 ================================================================================
